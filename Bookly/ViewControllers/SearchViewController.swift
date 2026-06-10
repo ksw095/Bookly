@@ -95,9 +95,6 @@ final class SearchViewController: UIViewController {
         
         navigationController?.setNavigationBarHidden(true, animated: animated)
         
-        // 실제 탭바에 올라가 있는 것은 SearchViewController가 아니라
-        // SearchViewController를 감싼 UINavigationController의 tabBarItem이다.
-        // 그래서 navigationController?.tabBarItem을 직접 고정해야 검색 텍스트가 사라지지 않는다.
         navigationController?.tabBarItem.title = "검색"
         navigationController?.tabBarItem.image = UIImage(systemName: "magnifyingglass")
         navigationController?.tabBarItem.selectedImage = UIImage(systemName: "magnifyingglass")
@@ -259,7 +256,6 @@ final class SearchViewController: UIViewController {
         sortButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         sortButton.setTitleColor(mutedTextColor, for: .normal)
         sortButton.tintColor = mutedTextColor
-        sortButton.semanticContentAttribute = .forceRightToLeft
         sortButton.contentHorizontalAlignment = .right
         
         sortButton.imageEdgeInsets = UIEdgeInsets(
@@ -444,20 +440,21 @@ final class SearchViewController: UIViewController {
                 )
                 
                 await MainActor.run {
-                    let newDocuments = response.documents
-                    self.totalResultCount = response.meta.pageable_count
+                    let filteredDocuments = self.filterDocumentsBySelectedTarget(response.documents)
+                    
                     self.isEnd = response.meta.is_end || page >= 50
                     
                     if isNewSearch {
-                        self.searchResults = self.removeDuplicates(from: newDocuments)
+                        self.searchResults = self.removeDuplicates(from: filteredDocuments)
                     } else {
-                        self.searchResults = self.removeDuplicates(from: self.searchResults + newDocuments)
+                        self.searchResults = self.removeDuplicates(from: self.searchResults + filteredDocuments)
                     }
                     
                     if self.selectedSort == .recency {
                         self.searchResults = self.sortByLatestPublicationDate(self.searchResults)
                     }
                     
+                    self.totalResultCount = self.searchResults.count
                     self.resultCountLabel.text = "검색 결과 \(self.totalResultCount)권"
                     self.tableView.reloadData()
                     
@@ -484,6 +481,42 @@ final class SearchViewController: UIViewController {
                 }
             }
         }
+    }
+    
+    private func filterDocumentsBySelectedTarget(_ documents: [KakaoBookDocument]) -> [KakaoBookDocument] {
+        let normalizedKeyword = normalizeSearchText(currentKeyword)
+        
+        guard !normalizedKeyword.isEmpty else {
+            return documents
+        }
+        
+        return documents.filter { document in
+            switch selectedTarget {
+            case .title:
+                let title = normalizeSearchText(document.title)
+                return title.contains(normalizedKeyword)
+                
+            case .author:
+                return document.authors.contains { author in
+                    normalizeSearchText(author).contains(normalizedKeyword)
+                }
+                
+            case .publisher:
+                let publisher = normalizeSearchText(document.publisher)
+                return publisher.contains(normalizedKeyword)
+            }
+        }
+    }
+    
+    private func normalizeSearchText(_ text: String) -> String {
+        text
+            .removingHTMLTags()
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "\t", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "_", with: "")
     }
     
     private func updateEmptyState(message: String) {
