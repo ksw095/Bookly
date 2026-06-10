@@ -25,7 +25,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let homeVC = HomeViewController()
         let searchVC = SearchViewController()
         let libraryVC = LibraryViewController()
-        let doneVC = DoneViewController()
+        let doneVC = RecordViewController()
         
         let homeNav = UINavigationController(rootViewController: homeVC)
         let searchNav = UINavigationController(rootViewController: searchVC)
