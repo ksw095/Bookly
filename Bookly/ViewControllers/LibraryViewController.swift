@@ -1,11 +1,70 @@
 import UIKit
 
+fileprivate enum LibraryShelfFilter: CaseIterable {
+    case recommendation
+    case done
+    case wish
+    case reading
+    
+    var title: String {
+        switch self {
+        case .recommendation:
+            return "추천 책장"
+        case .done:
+            return "완독한 책장"
+        case .wish:
+            return "위시 책장"
+        case .reading:
+            return "읽는 중인 책장"
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .recommendation:
+            return "books.vertical.fill"
+        case .done:
+            return "checkmark.circle.fill"
+        case .wish:
+            return "bookmark.fill"
+        case .reading:
+            return "book.fill"
+        }
+    }
+    
+    var emptyTitle: String {
+        switch self {
+        case .recommendation:
+            return "추천 도서를 준비하고 있어요"
+        case .done:
+            return "완독한 책을 기다리고 있어요"
+        case .wish:
+            return "읽고 싶은 책을 기다리고 있어요"
+        case .reading:
+            return "책 추가를 기다리는 중"
+        }
+    }
+    
+    var emptyDescription: String {
+        switch self {
+        case .recommendation:
+            return "잠시 후 추천 도서를 선반에 진열해둘게요."
+        case .done:
+            return "마지막 장까지 읽은 책은 이 선반에 꽂혀요."
+        case .wish:
+            return "찜한 책은 이 선반에 따로 꽂아둘게요."
+        case .reading:
+            return "읽기 시작한 책은 이 선반에서 이어볼 수 있어요."
+        }
+    }
+}
+
 final class LibraryViewController: UIViewController {
     private let store = BookStore.shared
     
     private let headerView = UIView()
     private let headerIconImageView = UIImageView()
-    private let headerTitleLabel = UILabel()
+    private let headerTitleButton = UIButton(type: .system)
     private let headerFirstLineLabel = UILabel()
     private let headerSecondLineLabel = UILabel()
     
@@ -18,6 +77,8 @@ final class LibraryViewController: UIViewController {
     private let contentPanelView = UIView()
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
+    
+    private var selectedShelfFilter: LibraryShelfFilter?
     
     private var recommendedDocuments: [KakaoBookDocument] = []
     private var isLoadingRecommendations = false
@@ -46,8 +107,20 @@ final class LibraryViewController: UIViewController {
         store.doneBooks
     }
     
-    private var shouldShowRecommendations: Bool {
-        doneBooks.isEmpty
+    private var wishBooks: [Book] {
+        store.wishBooks
+    }
+    
+    private var readingBooks: [Book] {
+        store.readingBooks
+    }
+    
+    private var defaultShelfFilter: LibraryShelfFilter {
+        doneBooks.isEmpty ? .recommendation : .done
+    }
+    
+    private var currentShelfFilter: LibraryShelfFilter {
+        selectedShelfFilter ?? defaultShelfFilter
     }
     
     override func viewDidLoad() {
@@ -107,19 +180,15 @@ final class LibraryViewController: UIViewController {
         headerView.backgroundColor = navyColor
         
         headerIconImageView.translatesAutoresizingMaskIntoConstraints = false
-        headerIconImageView.image = UIImage(systemName: "books.vertical.fill")
+        headerIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
         headerIconImageView.tintColor = .white
         headerIconImageView.contentMode = .scaleAspectFit
         
-        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        headerTitleLabel.font = .boldSystemFont(ofSize: 32)
-        headerTitleLabel.textColor = .white
-        headerTitleLabel.textAlignment = .left
-        headerTitleLabel.numberOfLines = 1
+        configureHeaderTitleButton()
         
         let titleStackView = UIStackView(arrangedSubviews: [
             headerIconImageView,
-            headerTitleLabel
+            headerTitleButton
         ])
         titleStackView.translatesAutoresizingMaskIntoConstraints = false
         titleStackView.axis = .horizontal
@@ -144,7 +213,7 @@ final class LibraryViewController: UIViewController {
         headerCommentContainerView.clipsToBounds = true
         
         headerCommentIconImageView.translatesAutoresizingMaskIntoConstraints = false
-        headerCommentIconImageView.image = UIImage(systemName: "books.vertical.fill")
+        headerCommentIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
         headerCommentIconImageView.tintColor = UIColor.white.withAlphaComponent(0.92)
         headerCommentIconImageView.contentMode = .scaleAspectFit
         
@@ -189,6 +258,8 @@ final class LibraryViewController: UIViewController {
             headerIconImageView.widthAnchor.constraint(equalToConstant: 30),
             headerIconImageView.heightAnchor.constraint(equalToConstant: 30),
             
+            headerTitleButton.heightAnchor.constraint(equalToConstant: 42),
+            
             headerCommentContainerView.heightAnchor.constraint(equalToConstant: 34),
             headerCommentContainerView.leadingAnchor.constraint(equalTo: textStackView.leadingAnchor),
             headerCommentContainerView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -24),
@@ -207,6 +278,53 @@ final class LibraryViewController: UIViewController {
             headerDecorationShelfView.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -34),
             headerDecorationShelfView.heightAnchor.constraint(equalToConstant: 76)
         ])
+    }
+    
+    private func configureHeaderTitleButton() {
+        let chevronImage = UIImage(
+            systemName: "chevron.down",
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: 15, weight: .bold)
+        )
+        
+        headerTitleButton.translatesAutoresizingMaskIntoConstraints = false
+        headerTitleButton.setTitle(currentShelfFilter.title, for: .normal)
+        headerTitleButton.setImage(chevronImage, for: .normal)
+        headerTitleButton.tintColor = .white
+        headerTitleButton.setTitleColor(.white, for: .normal)
+        headerTitleButton.titleLabel?.font = .boldSystemFont(ofSize: 32)
+        headerTitleButton.titleLabel?.lineBreakMode = .byClipping
+        headerTitleButton.contentHorizontalAlignment = .left
+        headerTitleButton.semanticContentAttribute = .forceRightToLeft
+        headerTitleButton.imageEdgeInsets = UIEdgeInsets(top: 2, left: 8, bottom: -2, right: -8)
+        headerTitleButton.titleEdgeInsets = UIEdgeInsets(top: 0, left: -2, bottom: 0, right: 2)
+        headerTitleButton.showsMenuAsPrimaryAction = true
+        headerTitleButton.menu = makeShelfFilterMenu()
+    }
+    
+    private func makeShelfFilterMenu() -> UIMenu {
+        let actions = LibraryShelfFilter.allCases.map { filter in
+            UIAction(
+                title: filter.title,
+                image: UIImage(systemName: filter.iconName),
+                state: currentShelfFilter == filter ? .on : .off
+            ) { [weak self] _ in
+                guard let self else {
+                    return
+                }
+                
+                self.selectedShelfFilter = filter
+                self.reloadData()
+            }
+        }
+        
+        return UIMenu(title: "책장 선택", children: actions)
+    }
+    
+    private func updateHeaderTitleButtonAppearance() {
+        headerTitleButton.setTitle(currentShelfFilter.title, for: .normal)
+        headerTitleButton.menu = makeShelfFilterMenu()
+        headerIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
+        headerCommentIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
     }
     
     private func configureContentPanelView() {
@@ -264,36 +382,66 @@ final class LibraryViewController: UIViewController {
             view.removeFromSuperview()
         }
         
-        if shouldShowRecommendations {
+        updateHeaderTitleButtonAppearance()
+        
+        switch currentShelfFilter {
+        case .recommendation:
             configureHeaderForRecommendation()
             renderRecommendationShelf()
             loadRecommendationsIfNeeded()
-        } else {
+            
+        case .done:
             configureHeaderForDoneBooks()
-            renderDoneShelf()
+            renderSavedShelf(books: doneBooks)
+            
+        case .wish:
+            configureHeaderForWishBooks()
+            renderSavedShelf(books: wishBooks)
+            
+        case .reading:
+            configureHeaderForReadingBooks()
+            renderSavedShelf(books: readingBooks)
         }
     }
     
-    private func configureHeaderForDoneBooks() {
-        headerIconImageView.image = UIImage(systemName: "books.vertical.fill")
-        headerCommentIconImageView.image = UIImage(systemName: "books.vertical.fill")
-        headerTitleLabel.text = "완독한 책장"
-        headerFirstLineLabel.text = "끝까지 읽은 책만 책장에 꽂아두었어요."
-        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 독서 기록을 확인해보세요."
-        headerCommentLabel.text = "지금까지 \(doneBooks.count)권의 책이 이 책장에 꽂혔어요."
-    }
-    
     private func configureHeaderForRecommendation() {
-        headerIconImageView.image = UIImage(systemName: "books.vertical.fill")
-        headerCommentIconImageView.image = UIImage(systemName: "books.vertical.fill")
-        headerTitleLabel.text = "추천 책장"
         headerFirstLineLabel.text = "아직 완독한 책이 없어서 오늘의 도서를 진열해두었어요."
         headerSecondLineLabel.text = "선반에 진열된 책을 눌러 책 정보를 확인해보세요."
         headerCommentLabel.text = "오늘의 추천 주제는 ‘\(dailyKeywordForToday())’예요."
     }
     
-    private func renderDoneShelf() {
-        let items = doneBooks.map { ShelfDisplayItem.saved($0) }
+    private func configureHeaderForDoneBooks() {
+        headerFirstLineLabel.text = "끝까지 읽은 책만 책장에 꽂아두었어요."
+        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 독서 기록을 확인해보세요."
+        headerCommentLabel.text = "지금까지 \(doneBooks.count)권의 책이 이 책장에 꽂혔어요."
+    }
+    
+    private func configureHeaderForWishBooks() {
+        headerFirstLineLabel.text = "읽고 싶은 책만 책장에 꽂아두었어요."
+        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 책 정보를 확인해보세요."
+        headerCommentLabel.text = "지금까지 \(wishBooks.count)권의 책이 위시 책장에 꽂혔어요."
+    }
+    
+    private func configureHeaderForReadingBooks() {
+        headerFirstLineLabel.text = "현재 읽고 있는 책만 책장에 꽂아두었어요."
+        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 독서 기록을 이어가보세요."
+        headerCommentLabel.text = "지금 \(readingBooks.count)권의 책을 읽고 있어요."
+    }
+    
+    private func renderSavedShelf(books: [Book]) {
+        guard !books.isEmpty else {
+            let emptyShelfView = MinimalWallShelfView()
+            emptyShelfView.configureEmptyState(
+                filter: currentShelfFilter,
+                tapHandler: { [weak self] in
+                    self?.tabBarController?.selectedIndex = 1
+                }
+            )
+            contentStackView.addArrangedSubview(emptyShelfView)
+            return
+        }
+        
+        let items = books.map { ShelfDisplayItem.saved($0) }
         
         let shelfView = MinimalWallShelfView()
         
@@ -318,24 +466,24 @@ final class LibraryViewController: UIViewController {
     
     private func renderRecommendationShelf() {
         if recommendedDocuments.isEmpty && isLoadingRecommendations {
-            let loadingView = makeLoadingGuideView()
-            contentStackView.addArrangedSubview(loadingView)
-            contentStackView.setCustomSpacing(24, after: loadingView)
-            
-            let shelfView = MinimalWallShelfView()
-            shelfView.configureEmptyShelf()
-            contentStackView.addArrangedSubview(shelfView)
+            let emptyShelfView = MinimalWallShelfView()
+            emptyShelfView.configureEmptyState(
+                filter: .recommendation,
+                tapHandler: nil
+            )
+            contentStackView.addArrangedSubview(emptyShelfView)
             return
         }
         
         if recommendedDocuments.isEmpty {
-            let guideView = makeEmptyGuideView()
-            contentStackView.addArrangedSubview(guideView)
-            contentStackView.setCustomSpacing(24, after: guideView)
-            
-            let shelfView = MinimalWallShelfView()
-            shelfView.configureEmptyShelf()
-            contentStackView.addArrangedSubview(shelfView)
+            let emptyShelfView = MinimalWallShelfView()
+            emptyShelfView.configureEmptyState(
+                filter: .recommendation,
+                tapHandler: { [weak self] in
+                    self?.tabBarController?.selectedIndex = 1
+                }
+            )
+            contentStackView.addArrangedSubview(emptyShelfView)
             return
         }
         
@@ -357,98 +505,6 @@ final class LibraryViewController: UIViewController {
         contentStackView.addArrangedSubview(shelfView)
     }
     
-    private func makeLoadingGuideView() -> UIView {
-        makeGuideView(
-            title: "오늘의 도서를 불러오는 중이에요",
-            description: "표지가 온전한 책만 골라 추천 책장에 진열하고 있어요.",
-            iconName: "books.vertical.fill"
-        )
-    }
-    
-    private func makeEmptyGuideView() -> UIView {
-        makeGuideView(
-            title: "아직 보여줄 추천 도서가 없어요",
-            description: "오늘의 추천 주제에서 조건에 맞는 책을 찾지 못했어요. 검색 화면에서 직접 책을 골라보세요.",
-            iconName: "books.vertical.fill"
-        )
-    }
-    
-    private func makeGuideView(
-        title: String,
-        description: String,
-        iconName: String
-    ) -> UIView {
-        let outerContainer = UIView()
-        outerContainer.backgroundColor = .clear
-        outerContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        let container = UIView()
-        container.backgroundColor = UIColor(red: 0.96, green: 0.97, blue: 0.99, alpha: 1.0)
-        container.layer.cornerRadius = 20
-        container.translatesAutoresizingMaskIntoConstraints = false
-        
-        let iconContainer = UIView()
-        iconContainer.backgroundColor = navyColor.withAlphaComponent(0.08)
-        iconContainer.layer.cornerRadius = 23
-        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        
-        let iconImageView = UIImageView(image: UIImage(systemName: iconName))
-        iconImageView.tintColor = navyColor
-        iconImageView.contentMode = .scaleAspectFit
-        iconImageView.translatesAutoresizingMaskIntoConstraints = false
-        
-        iconContainer.addSubview(iconImageView)
-        
-        let titleLabel = UILabel()
-        titleLabel.text = title
-        titleLabel.font = .boldSystemFont(ofSize: 18)
-        titleLabel.textColor = .label
-        
-        let descriptionLabel = UILabel()
-        descriptionLabel.text = description
-        descriptionLabel.font = .systemFont(ofSize: 13)
-        descriptionLabel.textColor = .secondaryLabel
-        descriptionLabel.numberOfLines = 0
-        
-        let textStack = UIStackView(arrangedSubviews: [
-            titleLabel,
-            descriptionLabel
-        ])
-        textStack.axis = .vertical
-        textStack.spacing = 5
-        textStack.translatesAutoresizingMaskIntoConstraints = false
-        
-        outerContainer.addSubview(container)
-        container.addSubview(iconContainer)
-        container.addSubview(textStack)
-        
-        NSLayoutConstraint.activate([
-            outerContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 112),
-            
-            container.topAnchor.constraint(equalTo: outerContainer.topAnchor),
-            container.leadingAnchor.constraint(equalTo: outerContainer.leadingAnchor, constant: 18),
-            container.trailingAnchor.constraint(equalTo: outerContainer.trailingAnchor, constant: -18),
-            container.bottomAnchor.constraint(equalTo: outerContainer.bottomAnchor),
-            
-            iconContainer.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 18),
-            iconContainer.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            iconContainer.widthAnchor.constraint(equalToConstant: 46),
-            iconContainer.heightAnchor.constraint(equalToConstant: 46),
-            
-            iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
-            iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 24),
-            iconImageView.heightAnchor.constraint(equalToConstant: 24),
-            
-            textStack.topAnchor.constraint(equalTo: container.topAnchor, constant: 18),
-            textStack.leadingAnchor.constraint(equalTo: iconContainer.trailingAnchor, constant: 14),
-            textStack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -18),
-            textStack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -18)
-        ])
-        
-        return outerContainer
-    }
-    
     private func showDeleteAlert(for book: Book) {
         let alert = UIAlertController(
             title: "책을 삭제할까요?",
@@ -467,7 +523,7 @@ final class LibraryViewController: UIViewController {
     }
     
     private func loadRecommendationsIfNeeded() {
-        guard shouldShowRecommendations else {
+        guard currentShelfFilter == .recommendation else {
             return
         }
         
@@ -1000,6 +1056,28 @@ private final class MinimalWallShelfView: UIView {
         }
     }
     
+    func configureEmptyState(
+        filter: LibraryShelfFilter,
+        tapHandler: (() -> Void)?
+    ) {
+        clearRows()
+        
+        let rowView = MinimalShelfRowView(
+            items: [],
+            maxColumns: maxColumns
+        )
+        
+        let emptyView = EmptyShelfHintView(
+            iconName: filter.iconName,
+            title: filter.emptyTitle,
+            description: filter.emptyDescription,
+            tapHandler: tapHandler
+        )
+        
+        rowView.addEmptyHintView(emptyView)
+        rowsStackView.addArrangedSubview(rowView)
+    }
+    
     func configureEmptyShelf() {
         clearRows()
         
@@ -1085,6 +1163,18 @@ private final class MinimalShelfRowView: UIView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    func addEmptyHintView(_ emptyView: UIView) {
+        emptyView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(emptyView)
+        
+        NSLayoutConstraint.activate([
+            emptyView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 44),
+            emptyView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -44),
+            emptyView.bottomAnchor.constraint(equalTo: shelfTopView.topAnchor, constant: -6),
+            emptyView.heightAnchor.constraint(equalToConstant: 68)
+        ])
     }
     
     private func configureUI() {
@@ -1202,6 +1292,134 @@ private final class MinimalShelfRowView: UIView {
         }
         
         return nil
+    }
+}
+
+private final class EmptyShelfHintView: UIView {
+    private let iconContainerView = UIView()
+    private let iconImageView = UIImageView()
+    private let plusBadgeView = UIView()
+    private let plusImageView = UIImageView()
+    private let titleLabel = UILabel()
+    private let descriptionLabel = UILabel()
+    private let tapHandler: (() -> Void)?
+    
+    init(
+        iconName: String,
+        title: String,
+        description: String,
+        tapHandler: (() -> Void)?
+    ) {
+        self.tapHandler = tapHandler
+        super.init(frame: .zero)
+        
+        configureUI(
+            iconName: iconName,
+            title: title,
+            description: description
+        )
+    }
+    
+    required init?(coder: NSCoder) {
+        self.tapHandler = nil
+        super.init(coder: coder)
+        
+        configureUI(
+            iconName: "book.fill",
+            title: "책 추가를 기다리는 중",
+            description: "검색에서 책을 추가하면 이 선반에 진열돼요."
+        )
+    }
+    
+    private func configureUI(
+        iconName: String,
+        title: String,
+        description: String
+    ) {
+        backgroundColor = .clear
+        isUserInteractionEnabled = true
+        
+        iconContainerView.translatesAutoresizingMaskIntoConstraints = false
+        iconContainerView.backgroundColor = UIColor(red: 0.02, green: 0.10, blue: 0.28, alpha: 0.08)
+        iconContainerView.layer.cornerRadius = 23
+        iconContainerView.clipsToBounds = false
+        
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.image = UIImage(systemName: iconName)
+        iconImageView.tintColor = UIColor(red: 0.02, green: 0.10, blue: 0.28, alpha: 0.78)
+        iconImageView.contentMode = .scaleAspectFit
+        
+        plusBadgeView.translatesAutoresizingMaskIntoConstraints = false
+        plusBadgeView.backgroundColor = UIColor(red: 0.33, green: 0.25, blue: 0.94, alpha: 1.0)
+        plusBadgeView.layer.cornerRadius = 9
+        plusBadgeView.clipsToBounds = true
+        
+        plusImageView.translatesAutoresizingMaskIntoConstraints = false
+        plusImageView.image = UIImage(systemName: "plus")
+        plusImageView.tintColor = .white
+        plusImageView.contentMode = .scaleAspectFit
+        
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 15, weight: .bold)
+        titleLabel.textColor = UIColor(red: 0.02, green: 0.10, blue: 0.28, alpha: 0.92)
+        titleLabel.numberOfLines = 1
+        
+        descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
+        descriptionLabel.text = description
+        descriptionLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        descriptionLabel.textColor = UIColor.secondaryLabel.withAlphaComponent(0.86)
+        descriptionLabel.numberOfLines = 1
+        
+        let textStackView = UIStackView(arrangedSubviews: [
+            titleLabel,
+            descriptionLabel
+        ])
+        textStackView.translatesAutoresizingMaskIntoConstraints = false
+        textStackView.axis = .vertical
+        textStackView.spacing = 4
+        textStackView.alignment = .leading
+        
+        addSubview(iconContainerView)
+        iconContainerView.addSubview(iconImageView)
+        iconContainerView.addSubview(plusBadgeView)
+        plusBadgeView.addSubview(plusImageView)
+        addSubview(textStackView)
+        
+        NSLayoutConstraint.activate([
+            iconContainerView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            iconContainerView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            iconContainerView.widthAnchor.constraint(equalToConstant: 46),
+            iconContainerView.heightAnchor.constraint(equalToConstant: 46),
+            
+            iconImageView.centerXAnchor.constraint(equalTo: iconContainerView.centerXAnchor),
+            iconImageView.centerYAnchor.constraint(equalTo: iconContainerView.centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 24),
+            iconImageView.heightAnchor.constraint(equalToConstant: 24),
+            
+            plusBadgeView.trailingAnchor.constraint(equalTo: iconContainerView.trailingAnchor, constant: 3),
+            plusBadgeView.bottomAnchor.constraint(equalTo: iconContainerView.bottomAnchor, constant: 3),
+            plusBadgeView.widthAnchor.constraint(equalToConstant: 18),
+            plusBadgeView.heightAnchor.constraint(equalToConstant: 18),
+            
+            plusImageView.centerXAnchor.constraint(equalTo: plusBadgeView.centerXAnchor),
+            plusImageView.centerYAnchor.constraint(equalTo: plusBadgeView.centerYAnchor),
+            plusImageView.widthAnchor.constraint(equalToConstant: 10),
+            plusImageView.heightAnchor.constraint(equalToConstant: 10),
+            
+            textStackView.leadingAnchor.constraint(equalTo: iconContainerView.trailingAnchor, constant: 14),
+            textStackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            textStackView.centerYAnchor.constraint(equalTo: centerYAnchor)
+        ])
+        
+        if tapHandler != nil {
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+            addGestureRecognizer(tapGesture)
+        }
+    }
+    
+    @objc private func handleTap() {
+        tapHandler?()
     }
 }
 
@@ -1328,7 +1546,6 @@ private final class HeaderDecorationShelfView: UIView {
             shelfShadowView.topAnchor.constraint(equalTo: shelfLineView.bottomAnchor, constant: -1),
             shelfShadowView.heightAnchor.constraint(equalToConstant: 12),
             
-            // 실제 그림의 하단이 선반에 닿도록, view 자체를 선반 안쪽으로 조금 내려줌
             lampView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             lampView.bottomAnchor.constraint(equalTo: shelfLineView.topAnchor, constant: 3),
             lampView.widthAnchor.constraint(equalToConstant: 46),
@@ -1399,7 +1616,6 @@ private final class MiniLampView: UIView {
         context.addLine(to: CGPoint(x: midX, y: 39))
         context.strokePath()
         
-        // 기존보다 아래까지 그려서 선반에 실제로 닿아 보이도록 함
         let basePath = UIBezierPath(
             roundedRect: CGRect(x: midX - 12, y: 39, width: 24, height: 5),
             cornerRadius: 2.5
@@ -1435,7 +1651,6 @@ private final class MiniBookStackView: UIView {
         let scaleY = rect.height / 24
         context.scaleBy(x: scaleX, y: scaleY)
         
-        // 책 더미도 가장 아래 책이 view 바닥까지 오도록 좌표 수정
         drawBook(x: 2, y: 18, width: 42, height: 6, color: UIColor(red: 0.90, green: 0.82, blue: 0.70, alpha: 1.0))
         drawBook(x: 8, y: 11, width: 34, height: 6, color: UIColor(red: 0.76, green: 0.67, blue: 0.55, alpha: 1.0))
         drawBook(x: 14, y: 4, width: 28, height: 6, color: UIColor(red: 0.96, green: 0.88, blue: 0.74, alpha: 1.0))
@@ -1500,7 +1715,6 @@ private final class MiniPlantView: UIView {
         drawLeaf(center: CGPoint(x: midX - 6, y: 22), angle: -0.7, color: leafColor)
         drawLeaf(center: CGPoint(x: midX + 7, y: 21), angle: 0.7, color: leafColor)
         
-        // 화분 바닥을 view 바닥까지 내려서 선반에 닿아 보이도록 함
         let potPath = UIBezierPath()
         potPath.move(to: CGPoint(x: midX - 12, y: 29))
         potPath.addLine(to: CGPoint(x: midX + 12, y: 29))
