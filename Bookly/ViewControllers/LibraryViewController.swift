@@ -13,6 +13,8 @@ final class LibraryViewController: UIViewController {
     private let headerCommentIconImageView = UIImageView()
     private let headerCommentLabel = UILabel()
     
+    private let headerDecorationShelfView = HeaderDecorationShelfView()
+    
     private let contentPanelView = UIView()
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
@@ -168,25 +170,28 @@ final class LibraryViewController: UIViewController {
         textStackView.spacing = 5
         textStackView.setCustomSpacing(12, after: headerSecondLineLabel)
         
+        headerDecorationShelfView.translatesAutoresizingMaskIntoConstraints = false
+        
         view.addSubview(headerView)
         headerView.addSubview(textStackView)
+        headerView.addSubview(headerDecorationShelfView)
         
         NSLayoutConstraint.activate([
             headerView.topAnchor.constraint(equalTo: view.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            headerView.heightAnchor.constraint(equalToConstant: 285),
+            headerView.heightAnchor.constraint(equalToConstant: 325),
             
             textStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 22),
-            textStackView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 14),
-            textStackView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -14),
+            textStackView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            textStackView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -24),
             
             headerIconImageView.widthAnchor.constraint(equalToConstant: 30),
             headerIconImageView.heightAnchor.constraint(equalToConstant: 30),
             
             headerCommentContainerView.heightAnchor.constraint(equalToConstant: 34),
             headerCommentContainerView.leadingAnchor.constraint(equalTo: textStackView.leadingAnchor),
-            headerCommentContainerView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -14),
+            headerCommentContainerView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -24),
             
             headerCommentIconImageView.leadingAnchor.constraint(equalTo: headerCommentContainerView.leadingAnchor, constant: 14),
             headerCommentIconImageView.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor),
@@ -195,7 +200,12 @@ final class LibraryViewController: UIViewController {
             
             headerCommentLabel.leadingAnchor.constraint(equalTo: headerCommentIconImageView.trailingAnchor, constant: 9),
             headerCommentLabel.trailingAnchor.constraint(equalTo: headerCommentContainerView.trailingAnchor, constant: -14),
-            headerCommentLabel.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor)
+            headerCommentLabel.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor),
+            
+            headerDecorationShelfView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 44),
+            headerDecorationShelfView.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -44),
+            headerDecorationShelfView.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -34),
+            headerDecorationShelfView.heightAnchor.constraint(equalToConstant: 76)
         ])
     }
     
@@ -235,7 +245,7 @@ final class LibraryViewController: UIViewController {
         scrollView.addSubview(contentStackView)
         
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: contentPanelView.topAnchor, constant: 50),
+            scrollView.topAnchor.constraint(equalTo: contentPanelView.topAnchor, constant: 36),
             scrollView.leadingAnchor.constraint(equalTo: contentPanelView.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: contentPanelView.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: contentPanelView.bottomAnchor),
@@ -274,8 +284,8 @@ final class LibraryViewController: UIViewController {
     }
     
     private func configureHeaderForRecommendation() {
-        headerIconImageView.image = UIImage(systemName: "sparkles")
-        headerCommentIconImageView.image = UIImage(systemName: "sparkles")
+        headerIconImageView.image = UIImage(systemName: "books.vertical.fill")
+        headerCommentIconImageView.image = UIImage(systemName: "books.vertical.fill")
         headerTitleLabel.text = "추천 책장"
         headerFirstLineLabel.text = "아직 완독한 책이 없어서 오늘의 도서를 진열해두었어요."
         headerSecondLineLabel.text = "선반에 진열된 책을 눌러 책 정보를 확인해보세요."
@@ -293,14 +303,12 @@ final class LibraryViewController: UIViewController {
                 guard case let .saved(book) = item.kind else {
                     return
                 }
-                
                 self?.pushRecordDetail(book: book)
             },
             longPressHandler: { [weak self] item in
                 guard case let .saved(book) = item.kind else {
                     return
                 }
-                
                 self?.showDeleteAlert(for: book)
             }
         )
@@ -341,7 +349,6 @@ final class LibraryViewController: UIViewController {
                 guard case let .recommendation(document) = item.kind else {
                     return
                 }
-                
                 self?.pushSearchDetail(document: document)
             },
             longPressHandler: nil
@@ -354,7 +361,7 @@ final class LibraryViewController: UIViewController {
         makeGuideView(
             title: "오늘의 도서를 불러오는 중이에요",
             description: "표지가 온전한 책만 골라 추천 책장에 진열하고 있어요.",
-            iconName: "sparkles"
+            iconName: "books.vertical.fill"
         )
     }
     
@@ -491,10 +498,9 @@ final class LibraryViewController: UIViewController {
                         sort: "accuracy"
                     )
                     
-                    let metadataFilteredDocuments = response.documents
-                        .filter { document in
-                            self.isValidRecommendation(document)
-                        }
+                    let metadataFilteredDocuments = response.documents.filter { document in
+                        self.isValidRecommendation(document)
+                    }
                     
                     for document in metadataFilteredDocuments {
                         let key = uniqueKey(for: document)
@@ -582,43 +588,17 @@ final class LibraryViewController: UIViewController {
         let normalizedText = RecommendationFilter.normalized(combinedText)
         
         let extraBadThumbnailSignals = [
-            "세트",
-            "전집",
-            "박스",
-            "박스세트",
-            "양장",
-            "특별판",
-            "한정판",
-            "리커버",
-            "리커버판",
-            "개정판",
-            "큰글자",
-            "큰글씨",
-            "합본",
-            "전권",
-            "패키지",
-            "스페셜",
-            "컬렉션",
-            "미니북",
-            "포켓북",
-            "카드북",
-            "워크북",
-            "필사",
-            "쓰기",
-            "따라쓰기",
-            "문고판",
-            "문고본",
-            "노트",
-            "다이어리",
-            "굿즈",
-            "cd",
-            "dvd",
-            "오디오북",
-            "전자책",
-            "ebook"
+            "세트", "전집", "박스", "박스세트", "양장", "특별판", "한정판",
+            "리커버", "리커버판", "개정판", "큰글자", "큰글씨", "합본",
+            "전권", "패키지", "스페셜", "컬렉션", "미니북", "포켓북",
+            "카드북", "워크북", "필사", "쓰기", "따라쓰기", "문고판",
+            "문고본", "노트", "다이어리", "굿즈", "cd", "dvd",
+            "오디오북", "전자책", "ebook"
         ]
         
-        guard !extraBadThumbnailSignals.contains(where: { normalizedText.contains(RecommendationFilter.normalized($0)) }) else {
+        guard !extraBadThumbnailSignals.contains(where: {
+            normalizedText.contains(RecommendationFilter.normalized($0))
+        }) else {
             return false
         }
         
@@ -661,7 +641,6 @@ final class LibraryViewController: UIViewController {
         
         let imageAspectRatio = CGFloat(height) / CGFloat(width)
         
-        // 실제 책 표지 정면 비율만 허용. 너무 넓거나 너무 길쭉하면 제외.
         guard imageAspectRatio >= 1.38, imageAspectRatio <= 1.82 else {
             return false
         }
@@ -674,23 +653,16 @@ final class LibraryViewController: UIViewController {
         }
         
         let borderWhiteRatio = whiteLikeBorderRatio(sample: sample)
-        
-        // 흰 배경 위에 책이 작게 놓인 상품 사진은 가장자리 흰 비율이 높음.
         guard borderWhiteRatio < 0.72 else {
             return false
         }
         
         let centralContentRatio = nonWhiteRatioInCentralArea(sample: sample)
-        
-        // 중앙부가 너무 비어있으면 상품 사진/여백 많은 이미지로 판단.
         guard centralContentRatio > 0.22 else {
             return false
         }
         
         let edgeContentRatio = nonWhiteRatioNearEdges(sample: sample)
-        
-        // 실제 표지면 좌우/상하 끝에도 표지 색이나 글자가 어느 정도 닿아야 함.
-        // 상품 사진은 책 주변 배경 때문에 가장자리 정보가 거의 없음.
         guard edgeContentRatio > 0.18 else {
             return false
         }
@@ -1046,7 +1018,7 @@ private final class MinimalWallShelfView: UIView {
         
         rowsStackView.translatesAutoresizingMaskIntoConstraints = false
         rowsStackView.axis = .vertical
-        rowsStackView.spacing = 34
+        rowsStackView.spacing = 32
         rowsStackView.isUserInteractionEnabled = true
         
         addSubview(rowsStackView)
@@ -1092,7 +1064,7 @@ private final class MinimalShelfRowView: UIView {
     private let maxColumns: Int
     
     private let bookStackView = UIStackView()
-    private let shelfShadowView = UIView()
+    private let shelfDropShadowView = ShelfDropShadowView()
     private let shelfTopView = TexturedWoodShelfTopView()
     private let shelfSideView = TexturedWoodShelfSideView()
     
@@ -1115,22 +1087,6 @@ private final class MinimalShelfRowView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        
-        let shadowRect = CGRect(
-            x: 10,
-            y: shelfTopView.frame.minY + 6,
-            width: bounds.width - 20,
-            height: 20
-        )
-        
-        shelfShadowView.layer.shadowPath = UIBezierPath(
-            roundedRect: shadowRect,
-            cornerRadius: 8
-        ).cgPath
-    }
-    
     private func configureUI() {
         translatesAutoresizingMaskIntoConstraints = false
         backgroundColor = .clear
@@ -1143,14 +1099,8 @@ private final class MinimalShelfRowView: UIView {
         bookStackView.spacing = 18
         bookStackView.isUserInteractionEnabled = false
         
-        shelfShadowView.translatesAutoresizingMaskIntoConstraints = false
-        shelfShadowView.backgroundColor = .clear
-        shelfShadowView.isUserInteractionEnabled = false
-        shelfShadowView.layer.shadowColor = UIColor.black.cgColor
-        shelfShadowView.layer.shadowOpacity = 0.16
-        shelfShadowView.layer.shadowRadius = 18
-        shelfShadowView.layer.shadowOffset = CGSize(width: 0, height: 12)
-        shelfShadowView.layer.masksToBounds = false
+        shelfDropShadowView.translatesAutoresizingMaskIntoConstraints = false
+        shelfDropShadowView.isUserInteractionEnabled = false
         
         shelfTopView.translatesAutoresizingMaskIntoConstraints = false
         shelfSideView.translatesAutoresizingMaskIntoConstraints = false
@@ -1158,32 +1108,32 @@ private final class MinimalShelfRowView: UIView {
         shelfSideView.isUserInteractionEnabled = false
         
         addSubview(bookStackView)
-        addSubview(shelfShadowView)
+        addSubview(shelfDropShadowView)
         addSubview(shelfTopView)
         addSubview(shelfSideView)
         
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(equalToConstant: 142),
+            heightAnchor.constraint(equalToConstant: 126),
             
             bookStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 26),
             bookStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -26),
             bookStackView.topAnchor.constraint(equalTo: topAnchor),
-            bookStackView.bottomAnchor.constraint(equalTo: shelfTopView.topAnchor, constant: 13),
-            
-            shelfShadowView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            shelfShadowView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            shelfShadowView.topAnchor.constraint(equalTo: shelfTopView.topAnchor),
-            shelfShadowView.bottomAnchor.constraint(equalTo: shelfSideView.bottomAnchor, constant: 18),
+            bookStackView.bottomAnchor.constraint(equalTo: shelfTopView.topAnchor, constant: 9),
             
             shelfTopView.leadingAnchor.constraint(equalTo: leadingAnchor),
             shelfTopView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            shelfTopView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -13),
+            shelfTopView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8),
             shelfTopView.heightAnchor.constraint(equalToConstant: 14),
             
             shelfSideView.leadingAnchor.constraint(equalTo: leadingAnchor),
             shelfSideView.trailingAnchor.constraint(equalTo: trailingAnchor),
             shelfSideView.topAnchor.constraint(equalTo: shelfTopView.bottomAnchor, constant: -1),
-            shelfSideView.heightAnchor.constraint(equalToConstant: 10)
+            shelfSideView.heightAnchor.constraint(equalToConstant: 10),
+            
+            shelfDropShadowView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            shelfDropShadowView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            shelfDropShadowView.topAnchor.constraint(equalTo: shelfSideView.bottomAnchor, constant: -1),
+            shelfDropShadowView.heightAnchor.constraint(equalToConstant: 14)
         ])
     }
     
@@ -1297,9 +1247,9 @@ private final class MinimalShelfBookSlotView: UIView {
         shadowContainerView.backgroundColor = .clear
         shadowContainerView.isUserInteractionEnabled = false
         shadowContainerView.layer.shadowColor = UIColor.black.cgColor
-        shadowContainerView.layer.shadowOpacity = 0.22
-        shadowContainerView.layer.shadowRadius = 12
-        shadowContainerView.layer.shadowOffset = CGSize(width: 0, height: 7)
+        shadowContainerView.layer.shadowOpacity = 0.18
+        shadowContainerView.layer.shadowRadius = 9
+        shadowContainerView.layer.shadowOffset = CGSize(width: 0, height: 5)
         shadowContainerView.layer.masksToBounds = false
         
         let bookImageView = UIImageView()
@@ -1320,13 +1270,301 @@ private final class MinimalShelfBookSlotView: UIView {
             shadowContainerView.centerXAnchor.constraint(equalTo: centerXAnchor),
             shadowContainerView.bottomAnchor.constraint(equalTo: bottomAnchor),
             shadowContainerView.widthAnchor.constraint(equalToConstant: 72),
-            shadowContainerView.heightAnchor.constraint(equalToConstant: 116),
+            shadowContainerView.heightAnchor.constraint(equalToConstant: 108),
             
             bookImageView.topAnchor.constraint(equalTo: shadowContainerView.topAnchor),
             bookImageView.leadingAnchor.constraint(equalTo: shadowContainerView.leadingAnchor),
             bookImageView.trailingAnchor.constraint(equalTo: shadowContainerView.trailingAnchor),
             bookImageView.bottomAnchor.constraint(equalTo: shadowContainerView.bottomAnchor)
         ])
+    }
+}
+
+private final class HeaderDecorationShelfView: UIView {
+    private let lampView = MiniLampView()
+    private let booksView = MiniBookStackView()
+    private let plantView = MiniPlantView()
+    private let shelfLineView = UIView()
+    private let shelfShadowView = ShelfDropShadowView()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configureUI()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureUI()
+    }
+    
+    private func configureUI() {
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+        
+        lampView.translatesAutoresizingMaskIntoConstraints = false
+        booksView.translatesAutoresizingMaskIntoConstraints = false
+        plantView.translatesAutoresizingMaskIntoConstraints = false
+        shelfLineView.translatesAutoresizingMaskIntoConstraints = false
+        shelfShadowView.translatesAutoresizingMaskIntoConstraints = false
+        
+        shelfLineView.backgroundColor = UIColor(red: 0.78, green: 0.60, blue: 0.42, alpha: 1.0)
+        shelfLineView.layer.cornerRadius = 2
+        shelfLineView.clipsToBounds = true
+        
+        addSubview(lampView)
+        addSubview(booksView)
+        addSubview(plantView)
+        addSubview(shelfShadowView)
+        addSubview(shelfLineView)
+        
+        NSLayoutConstraint.activate([
+            shelfLineView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            shelfLineView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            shelfLineView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            shelfLineView.heightAnchor.constraint(equalToConstant: 6),
+            
+            shelfShadowView.leadingAnchor.constraint(equalTo: shelfLineView.leadingAnchor),
+            shelfShadowView.trailingAnchor.constraint(equalTo: shelfLineView.trailingAnchor),
+            shelfShadowView.topAnchor.constraint(equalTo: shelfLineView.bottomAnchor, constant: -1),
+            shelfShadowView.heightAnchor.constraint(equalToConstant: 12),
+            
+            // 실제 그림의 하단이 선반에 닿도록, view 자체를 선반 안쪽으로 조금 내려줌
+            lampView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            lampView.bottomAnchor.constraint(equalTo: shelfLineView.topAnchor, constant: 3),
+            lampView.widthAnchor.constraint(equalToConstant: 46),
+            lampView.heightAnchor.constraint(equalToConstant: 58),
+            
+            booksView.leadingAnchor.constraint(equalTo: lampView.trailingAnchor, constant: 10),
+            booksView.bottomAnchor.constraint(equalTo: shelfLineView.topAnchor, constant: 3),
+            booksView.widthAnchor.constraint(equalToConstant: 62),
+            booksView.heightAnchor.constraint(equalToConstant: 32),
+            
+            plantView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            plantView.bottomAnchor.constraint(equalTo: shelfLineView.topAnchor, constant: 3),
+            plantView.widthAnchor.constraint(equalToConstant: 50),
+            plantView.heightAnchor.constraint(equalToConstant: 60)
+        ])
+    }
+}
+
+private final class MiniLampView: UIView {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+    
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else {
+            return
+        }
+        
+        context.saveGState()
+        
+        let scaleX = rect.width / 34
+        let scaleY = rect.height / 44
+        context.scaleBy(x: scaleX, y: scaleY)
+        
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        
+        let shadeColor = UIColor(red: 0.92, green: 0.72, blue: 0.48, alpha: 1.0)
+        let darkShadeColor = UIColor(red: 0.66, green: 0.45, blue: 0.27, alpha: 1.0)
+        let standColor = UIColor(red: 0.83, green: 0.68, blue: 0.52, alpha: 1.0)
+        
+        let midX: CGFloat = 17
+        
+        let shadePath = UIBezierPath()
+        shadePath.move(to: CGPoint(x: midX - 10, y: 4))
+        shadePath.addLine(to: CGPoint(x: midX + 10, y: 4))
+        shadePath.addLine(to: CGPoint(x: midX + 14, y: 19))
+        shadePath.addLine(to: CGPoint(x: midX - 14, y: 19))
+        shadePath.close()
+        shadeColor.setFill()
+        shadePath.fill()
+        
+        darkShadeColor.setStroke()
+        shadePath.lineWidth = 1
+        shadePath.stroke()
+        
+        standColor.setStroke()
+        context.setLineWidth(2)
+        context.move(to: CGPoint(x: midX, y: 19))
+        context.addLine(to: CGPoint(x: midX, y: 39))
+        context.strokePath()
+        
+        // 기존보다 아래까지 그려서 선반에 실제로 닿아 보이도록 함
+        let basePath = UIBezierPath(
+            roundedRect: CGRect(x: midX - 12, y: 39, width: 24, height: 5),
+            cornerRadius: 2.5
+        )
+        standColor.setFill()
+        basePath.fill()
+        
+        context.restoreGState()
+    }
+}
+
+private final class MiniBookStackView: UIView {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+    
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else {
+            return
+        }
+        
+        context.saveGState()
+        
+        let scaleX = rect.width / 48
+        let scaleY = rect.height / 24
+        context.scaleBy(x: scaleX, y: scaleY)
+        
+        // 책 더미도 가장 아래 책이 view 바닥까지 오도록 좌표 수정
+        drawBook(x: 2, y: 18, width: 42, height: 6, color: UIColor(red: 0.90, green: 0.82, blue: 0.70, alpha: 1.0))
+        drawBook(x: 8, y: 11, width: 34, height: 6, color: UIColor(red: 0.76, green: 0.67, blue: 0.55, alpha: 1.0))
+        drawBook(x: 14, y: 4, width: 28, height: 6, color: UIColor(red: 0.96, green: 0.88, blue: 0.74, alpha: 1.0))
+        
+        context.restoreGState()
+    }
+    
+    private func drawBook(x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat, color: UIColor) {
+        let path = UIBezierPath(
+            roundedRect: CGRect(x: x, y: y, width: width, height: height),
+            cornerRadius: 1.5
+        )
+        color.setFill()
+        path.fill()
+        
+        UIColor.black.withAlphaComponent(0.12).setStroke()
+        path.lineWidth = 0.7
+        path.stroke()
+    }
+}
+
+private final class MiniPlantView: UIView {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+    }
+    
+    override func draw(_ rect: CGRect) {
+        guard let context = UIGraphicsGetCurrentContext() else {
+            return
+        }
+        
+        context.saveGState()
+        
+        let scaleX = rect.width / 38
+        let scaleY = rect.height / 46
+        context.scaleBy(x: scaleX, y: scaleY)
+        
+        let stemColor = UIColor(red: 0.39, green: 0.66, blue: 0.35, alpha: 1.0)
+        let leafColor = UIColor(red: 0.34, green: 0.74, blue: 0.38, alpha: 1.0)
+        let potColor = UIColor(red: 0.82, green: 0.56, blue: 0.32, alpha: 1.0)
+        let potDarkColor = UIColor(red: 0.61, green: 0.37, blue: 0.20, alpha: 1.0)
+        
+        let midX: CGFloat = 19
+        
+        stemColor.setStroke()
+        context.setLineWidth(2)
+        context.setLineCap(.round)
+        context.move(to: CGPoint(x: midX, y: 29))
+        context.addLine(to: CGPoint(x: midX, y: 9))
+        context.strokePath()
+        
+        drawLeaf(center: CGPoint(x: midX - 8, y: 15), angle: -0.7, color: leafColor)
+        drawLeaf(center: CGPoint(x: midX + 8, y: 12), angle: 0.7, color: leafColor)
+        drawLeaf(center: CGPoint(x: midX - 6, y: 22), angle: -0.7, color: leafColor)
+        drawLeaf(center: CGPoint(x: midX + 7, y: 21), angle: 0.7, color: leafColor)
+        
+        // 화분 바닥을 view 바닥까지 내려서 선반에 닿아 보이도록 함
+        let potPath = UIBezierPath()
+        potPath.move(to: CGPoint(x: midX - 12, y: 29))
+        potPath.addLine(to: CGPoint(x: midX + 12, y: 29))
+        potPath.addLine(to: CGPoint(x: midX + 9, y: 46))
+        potPath.addLine(to: CGPoint(x: midX - 9, y: 46))
+        potPath.close()
+        potColor.setFill()
+        potPath.fill()
+        
+        potDarkColor.setStroke()
+        potPath.lineWidth = 1
+        potPath.stroke()
+        
+        context.restoreGState()
+    }
+    
+    private func drawLeaf(center: CGPoint, angle: CGFloat, color: UIColor) {
+        let leafPath = UIBezierPath(
+            ovalIn: CGRect(x: center.x - 5, y: center.y - 3, width: 10, height: 6)
+        )
+        
+        let transform = CGAffineTransform(translationX: center.x, y: center.y)
+            .rotated(by: angle)
+            .translatedBy(x: -center.x, y: -center.y)
+        
+        leafPath.apply(transform)
+        color.setFill()
+        leafPath.fill()
+    }
+}
+
+private final class ShelfDropShadowView: UIView {
+    private let gradientLayer = CAGradientLayer()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configureUI()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configureUI()
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientLayer.frame = bounds
+    }
+    
+    private func configureUI() {
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+        clipsToBounds = true
+        
+        gradientLayer.colors = [
+            UIColor.black.withAlphaComponent(0.13).cgColor,
+            UIColor.black.withAlphaComponent(0.045).cgColor,
+            UIColor.clear.cgColor
+        ]
+        gradientLayer.locations = [0.0, 0.42, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
+        gradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        
+        layer.addSublayer(gradientLayer)
     }
 }
 
