@@ -86,6 +86,7 @@ final class SearchViewController: UIViewController {
         title = ""
         view.backgroundColor = navyColor
         navigationController?.setNavigationBarHidden(true, animated: false)
+        
         configureUI()
         updateEmptyState(message: "검색어를 입력해 도서를 찾아보세요.")
     }
@@ -242,38 +243,36 @@ final class SearchViewController: UIViewController {
     }
     
     private func configureSortButton() {
-        sortButton.setTitle(selectedSort.title, for: .normal)
+        var configuration = UIButton.Configuration.plain()
         
-        let chevronImage = UIImage(
+        var title = AttributedString(selectedSort.title)
+        title.font = .systemFont(ofSize: 14, weight: .semibold)
+        title.foregroundColor = mutedTextColor
+        
+        configuration.attributedTitle = title
+        configuration.image = UIImage(
             systemName: "chevron.down",
             withConfiguration: UIImage.SymbolConfiguration(
                 pointSize: 10,
                 weight: .semibold
             )
         )
+        configuration.imagePlacement = .trailing
+        configuration.imagePadding = 6
+        configuration.contentInsets = NSDirectionalEdgeInsets(
+            top: 0,
+            leading: 0,
+            bottom: 0,
+            trailing: 0
+        )
         
-        sortButton.setImage(chevronImage, for: .normal)
-        sortButton.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
-        sortButton.setTitleColor(mutedTextColor, for: .normal)
+        sortButton.configuration = configuration
         sortButton.tintColor = mutedTextColor
         sortButton.contentHorizontalAlignment = .right
-        
-        sortButton.imageEdgeInsets = UIEdgeInsets(
-            top: 1,
-            left: 4,
-            bottom: -1,
-            right: -4
-        )
-        
-        sortButton.titleEdgeInsets = UIEdgeInsets(
-            top: 0,
-            left: -2,
-            bottom: 0,
-            right: 2
-        )
-        
         sortButton.showsMenuAsPrimaryAction = true
         sortButton.menu = makeSortMenu()
+        
+        sortButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 82).isActive = true
     }
     
     private func configureLayout() {
