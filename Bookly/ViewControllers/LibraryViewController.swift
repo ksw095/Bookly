@@ -68,6 +68,7 @@ final class LibraryViewController: UIViewController {
     private let headerTitleButton = UIButton(type: .system)
     
     private let headerCommentContainerView = UIView()
+    private let headerCommentIconImageView = UIImageView()
     private let headerCommentLabel = UILabel()
     
     private let headerDecorationShelfView = HeaderDecorationShelfView()
@@ -206,6 +207,11 @@ final class LibraryViewController: UIViewController {
         headerCommentContainerView.layer.cornerRadius = 16
         headerCommentContainerView.clipsToBounds = true
         
+        headerCommentIconImageView.translatesAutoresizingMaskIntoConstraints = false
+        headerCommentIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
+        headerCommentIconImageView.tintColor = UIColor.white.withAlphaComponent(0.92)
+        headerCommentIconImageView.contentMode = .scaleAspectFit
+        
         headerCommentLabel.translatesAutoresizingMaskIntoConstraints = false
         headerCommentLabel.font = .systemFont(ofSize: 13, weight: .semibold)
         headerCommentLabel.textColor = UIColor.white.withAlphaComponent(0.92)
@@ -213,6 +219,7 @@ final class LibraryViewController: UIViewController {
         headerCommentLabel.numberOfLines = 1
         headerCommentLabel.lineBreakMode = .byTruncatingTail
         
+        headerCommentContainerView.addSubview(headerCommentIconImageView)
         headerCommentContainerView.addSubview(headerCommentLabel)
         
         let textStackView = UIStackView(arrangedSubviews: [
@@ -253,8 +260,13 @@ final class LibraryViewController: UIViewController {
             headerCommentContainerView.leadingAnchor.constraint(equalTo: textStackView.leadingAnchor),
             headerCommentContainerView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -24),
             
-            headerCommentLabel.leadingAnchor.constraint(equalTo: headerCommentContainerView.leadingAnchor, constant: 18),
-            headerCommentLabel.trailingAnchor.constraint(equalTo: headerCommentContainerView.trailingAnchor, constant: -18),
+            headerCommentIconImageView.leadingAnchor.constraint(equalTo: headerCommentContainerView.leadingAnchor, constant: 14),
+            headerCommentIconImageView.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor),
+            headerCommentIconImageView.widthAnchor.constraint(equalToConstant: 16),
+            headerCommentIconImageView.heightAnchor.constraint(equalToConstant: 16),
+            
+            headerCommentLabel.leadingAnchor.constraint(equalTo: headerCommentIconImageView.trailingAnchor, constant: 9),
+            headerCommentLabel.trailingAnchor.constraint(equalTo: headerCommentContainerView.trailingAnchor, constant: -14),
             headerCommentLabel.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor),
             
             headerDecorationShelfView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 44),
@@ -307,6 +319,7 @@ final class LibraryViewController: UIViewController {
     private func updateHeaderTitleButtonAppearance() {
         headerTitleButton.setTitle(currentShelfFilter.title, for: .normal)
         headerTitleButton.menu = makeShelfFilterMenu()
+        headerCommentIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
     }
     
     private func configureContentPanelView() {
@@ -600,39 +613,7 @@ final class LibraryViewController: UIViewController {
     }
     
     private func isValidRecommendation(_ document: KakaoBookDocument) -> Bool {
-        let title = document.title.removingHTMLTags()
-        let authorText = document.authors.joined(separator: " ")
-        let publisher = document.publisher
-        let contents = document.contents.removingHTMLTags()
-        
-        let combinedText = "\(title) \(authorText) \(publisher) \(contents)"
-        
-        guard !document.thumbnail.isEmpty else {
-            return false
-        }
-        
-        guard !RecommendationFilter.containsBannedKeyword(in: combinedText) else {
-            return false
-        }
-        
-        let normalizedText = RecommendationFilter.normalized(combinedText)
-        
-        let extraBadThumbnailSignals = [
-            "세트", "전집", "박스", "박스세트", "양장", "특별판", "한정판",
-            "리커버", "리커버판", "개정판", "큰글자", "큰글씨", "합본",
-            "전권", "패키지", "스페셜", "컬렉션", "미니북", "포켓북",
-            "카드북", "워크북", "필사", "쓰기", "따라쓰기", "문고판",
-            "문고본", "노트", "다이어리", "굿즈", "cd", "dvd",
-            "오디오북", "전자책", "ebook"
-        ]
-        
-        guard !extraBadThumbnailSignals.contains(where: {
-            normalizedText.contains(RecommendationFilter.normalized($0))
-        }) else {
-            return false
-        }
-        
-        return true
+        return RecommendationFilter.isRecommendable(document)
     }
     
     private func thumbnailLooksLikeCleanStandingBookCover(_ thumbnailURLString: String) async -> Bool {

@@ -34,16 +34,21 @@ final class HomeViewController: UIViewController {
     private let backgroundColor = UIColor(red: 0.95, green: 0.96, blue: 0.99, alpha: 1.0)
     
     private let dailyKeywords = [
-        "인문학",
-        "경제",
-        "자기계발",
-        "소설",
-        "과학",
-        "역사",
-        "철학",
-        "에세이",
-        "심리",
-        "기술"
+        "한국문학 소설",
+        "세계문학 소설",
+        "문학상 수상작",
+        "에세이 베스트셀러",
+        "고전문학",
+        "인문학 교양",
+        "철학 에세이",
+        "심리학 교양",
+        "경제경영 교양",
+        "사회과학 교양",
+        "과학 교양서",
+        "역사 교양서",
+        "자기계발 베스트셀러",
+        "브랜딩 마케팅",
+        "트렌드 분석"
     ]
     
     override func viewDidLoad() {
@@ -502,20 +507,48 @@ final class HomeViewController: UIViewController {
     }
     
     private func loadTodayBooks() {
-        let keyword = todayKeyword()
-        
         Task {
             do {
-                let response = try await KakaoBookService.shared.searchBooks(
-                    keyword: keyword,
-                    page: 1,
-                    size: 10,
-                    target: nil,
-                    sort: "accuracy"
-                )
+                var finalDocuments: [KakaoBookDocument] = []
+                var seenKeys = Set<String>()
+                
+                let keywords = rotatedDailyKeywordsStartingFromToday()
+                
+                for keyword in keywords {
+                    let response = try await KakaoBookService.shared.searchBooks(
+                        keyword: keyword,
+                        page: 1,
+                        size: 50,
+                        target: nil,
+                        sort: "accuracy"
+                    )
+                    
+                    let filteredDocuments = response.documents.filter { document in
+                        RecommendationFilter.isRecommendable(document)
+                    }
+                    
+                    for document in filteredDocuments {
+                        let key = recommendationUniqueKey(for: document)
+                        
+                        guard !seenKeys.contains(key) else {
+                            continue
+                        }
+                        
+                        seenKeys.insert(key)
+                        finalDocuments.append(document)
+                        
+                        if finalDocuments.count >= 8 {
+                            break
+                        }
+                    }
+                    
+                    if finalDocuments.count >= 8 {
+                        break
+                    }
+                }
                 
                 await MainActor.run {
-                    self.todayBooks = Array(response.documents.prefix(8))
+                    self.todayBooks = finalDocuments
                     self.todayCollectionView.reloadData()
                 }
             } catch {
@@ -527,6 +560,26 @@ final class HomeViewController: UIViewController {
     private func todayKeyword() -> String {
         let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
         return dailyKeywords[day % dailyKeywords.count]
+    }
+    
+    private func rotatedDailyKeywordsStartingFromToday() -> [String] {
+        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+        let startIndex = day % dailyKeywords.count
+        
+        let firstPart = dailyKeywords[startIndex..<dailyKeywords.count]
+        let secondPart = dailyKeywords[0..<startIndex]
+        
+        return Array(firstPart + secondPart)
+    }
+    
+    private func recommendationUniqueKey(for document: KakaoBookDocument) -> String {
+        let title = document.title.removingHTMLTags()
+        let authors = document.authors.joined(separator: ",")
+        let publisher = document.publisher
+        
+        return "\(title)-\(authors)-\(publisher)"
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "")
     }
     
     @objc private func libraryShortcutTapped() {

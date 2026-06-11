@@ -161,7 +161,7 @@ final class RecordViewController: UIViewController {
         
         pageTitleLabel.translatesAutoresizingMaskIntoConstraints = false
         pageTitleLabel.text = "독서 기록"
-        pageTitleLabel.font = .boldSystemFont(ofSize: 32)
+        pageTitleLabel.font = .boldSystemFont(ofSize: 27)
         pageTitleLabel.textColor = .white
         
         countBadgeView.translatesAutoresizingMaskIntoConstraints = false
