@@ -63,13 +63,11 @@ final class LibraryViewController: UIViewController {
     private let store = BookStore.shared
     
     private let headerView = UIView()
-    private let headerIconImageView = UIImageView()
+    private let booklyLogoLabel = UILabel()
+    private let booklySubtitleLabel = UILabel()
     private let headerTitleButton = UIButton(type: .system)
-    private let headerFirstLineLabel = UILabel()
-    private let headerSecondLineLabel = UILabel()
     
     private let headerCommentContainerView = UIView()
-    private let headerCommentIconImageView = UIImageView()
     private let headerCommentLabel = UILabel()
     
     private let headerDecorationShelfView = HeaderDecorationShelfView()
@@ -179,43 +177,34 @@ final class LibraryViewController: UIViewController {
         headerView.translatesAutoresizingMaskIntoConstraints = false
         headerView.backgroundColor = navyColor
         
-        headerIconImageView.translatesAutoresizingMaskIntoConstraints = false
-        headerIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
-        headerIconImageView.tintColor = .white
-        headerIconImageView.contentMode = .scaleAspectFit
+        booklyLogoLabel.translatesAutoresizingMaskIntoConstraints = false
+        booklyLogoLabel.text = "Bookly"
+        booklyLogoLabel.textColor = .white
+        booklyLogoLabel.textAlignment = .left
+        booklyLogoLabel.font = UIFont(name: "Georgia-BoldItalic", size: 36) ?? .italicSystemFont(ofSize: 36)
+        booklyLogoLabel.numberOfLines = 1
+        
+        booklySubtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        booklySubtitleLabel.text = "기록할수록 나의 독서가 완성된다 ✦"
+        booklySubtitleLabel.font = .systemFont(ofSize: 11, weight: .medium)
+        booklySubtitleLabel.textColor = UIColor.white.withAlphaComponent(0.78)
+        booklySubtitleLabel.textAlignment = .left
+        booklySubtitleLabel.numberOfLines = 1
         
         configureHeaderTitleButton()
         
         let titleStackView = UIStackView(arrangedSubviews: [
-            headerIconImageView,
             headerTitleButton
         ])
         titleStackView.translatesAutoresizingMaskIntoConstraints = false
         titleStackView.axis = .horizontal
         titleStackView.alignment = .center
-        titleStackView.spacing = 6
-        
-        headerFirstLineLabel.translatesAutoresizingMaskIntoConstraints = false
-        headerFirstLineLabel.font = .systemFont(ofSize: 15, weight: .regular)
-        headerFirstLineLabel.textColor = UIColor.white.withAlphaComponent(0.78)
-        headerFirstLineLabel.textAlignment = .left
-        headerFirstLineLabel.numberOfLines = 0
-        
-        headerSecondLineLabel.translatesAutoresizingMaskIntoConstraints = false
-        headerSecondLineLabel.font = .systemFont(ofSize: 15, weight: .regular)
-        headerSecondLineLabel.textColor = UIColor.white.withAlphaComponent(0.78)
-        headerSecondLineLabel.textAlignment = .left
-        headerSecondLineLabel.numberOfLines = 0
+        titleStackView.spacing = 0
         
         headerCommentContainerView.translatesAutoresizingMaskIntoConstraints = false
         headerCommentContainerView.backgroundColor = UIColor.white.withAlphaComponent(0.12)
         headerCommentContainerView.layer.cornerRadius = 16
         headerCommentContainerView.clipsToBounds = true
-        
-        headerCommentIconImageView.translatesAutoresizingMaskIntoConstraints = false
-        headerCommentIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
-        headerCommentIconImageView.tintColor = UIColor.white.withAlphaComponent(0.92)
-        headerCommentIconImageView.contentMode = .scaleAspectFit
         
         headerCommentLabel.translatesAutoresizingMaskIntoConstraints = false
         headerCommentLabel.font = .systemFont(ofSize: 13, weight: .semibold)
@@ -224,20 +213,20 @@ final class LibraryViewController: UIViewController {
         headerCommentLabel.numberOfLines = 1
         headerCommentLabel.lineBreakMode = .byTruncatingTail
         
-        headerCommentContainerView.addSubview(headerCommentIconImageView)
         headerCommentContainerView.addSubview(headerCommentLabel)
         
         let textStackView = UIStackView(arrangedSubviews: [
+            booklyLogoLabel,
+            booklySubtitleLabel,
             titleStackView,
-            headerFirstLineLabel,
-            headerSecondLineLabel,
             headerCommentContainerView
         ])
         textStackView.translatesAutoresizingMaskIntoConstraints = false
         textStackView.axis = .vertical
         textStackView.alignment = .leading
         textStackView.spacing = 5
-        textStackView.setCustomSpacing(12, after: headerSecondLineLabel)
+        textStackView.setCustomSpacing(18, after: booklySubtitleLabel)
+        textStackView.setCustomSpacing(10, after: titleStackView)
         
         headerDecorationShelfView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -249,28 +238,23 @@ final class LibraryViewController: UIViewController {
             headerView.topAnchor.constraint(equalTo: view.topAnchor),
             headerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            headerView.heightAnchor.constraint(equalToConstant: 325),
+            headerView.heightAnchor.constraint(equalToConstant: 335),
             
-            textStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 22),
-            textStackView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 20),
+            textStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
+            textStackView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 22),
             textStackView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -24),
             
-            headerIconImageView.widthAnchor.constraint(equalToConstant: 30),
-            headerIconImageView.heightAnchor.constraint(equalToConstant: 30),
+            booklyLogoLabel.heightAnchor.constraint(equalToConstant: 42),
+            booklySubtitleLabel.heightAnchor.constraint(equalToConstant: 16),
             
-            headerTitleButton.heightAnchor.constraint(equalToConstant: 42),
+            headerTitleButton.heightAnchor.constraint(equalToConstant: 36),
             
             headerCommentContainerView.heightAnchor.constraint(equalToConstant: 34),
             headerCommentContainerView.leadingAnchor.constraint(equalTo: textStackView.leadingAnchor),
             headerCommentContainerView.trailingAnchor.constraint(lessThanOrEqualTo: headerView.trailingAnchor, constant: -24),
             
-            headerCommentIconImageView.leadingAnchor.constraint(equalTo: headerCommentContainerView.leadingAnchor, constant: 14),
-            headerCommentIconImageView.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor),
-            headerCommentIconImageView.widthAnchor.constraint(equalToConstant: 16),
-            headerCommentIconImageView.heightAnchor.constraint(equalToConstant: 16),
-            
-            headerCommentLabel.leadingAnchor.constraint(equalTo: headerCommentIconImageView.trailingAnchor, constant: 9),
-            headerCommentLabel.trailingAnchor.constraint(equalTo: headerCommentContainerView.trailingAnchor, constant: -14),
+            headerCommentLabel.leadingAnchor.constraint(equalTo: headerCommentContainerView.leadingAnchor, constant: 18),
+            headerCommentLabel.trailingAnchor.constraint(equalTo: headerCommentContainerView.trailingAnchor, constant: -18),
             headerCommentLabel.centerYAnchor.constraint(equalTo: headerCommentContainerView.centerYAnchor),
             
             headerDecorationShelfView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 44),
@@ -291,7 +275,7 @@ final class LibraryViewController: UIViewController {
         headerTitleButton.setImage(chevronImage, for: .normal)
         headerTitleButton.tintColor = .white
         headerTitleButton.setTitleColor(.white, for: .normal)
-        headerTitleButton.titleLabel?.font = .boldSystemFont(ofSize: 32)
+        headerTitleButton.titleLabel?.font = .boldSystemFont(ofSize: 27)
         headerTitleButton.titleLabel?.lineBreakMode = .byClipping
         headerTitleButton.contentHorizontalAlignment = .left
         headerTitleButton.semanticContentAttribute = .forceRightToLeft
@@ -323,8 +307,6 @@ final class LibraryViewController: UIViewController {
     private func updateHeaderTitleButtonAppearance() {
         headerTitleButton.setTitle(currentShelfFilter.title, for: .normal)
         headerTitleButton.menu = makeShelfFilterMenu()
-        headerIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
-        headerCommentIconImageView.image = UIImage(systemName: currentShelfFilter.iconName)
     }
     
     private func configureContentPanelView() {
@@ -405,26 +387,18 @@ final class LibraryViewController: UIViewController {
     }
     
     private func configureHeaderForRecommendation() {
-        headerFirstLineLabel.text = "아직 완독한 책이 없어서 오늘의 도서를 진열해두었어요."
-        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 책 정보를 확인해보세요."
         headerCommentLabel.text = "오늘의 추천 주제는 ‘\(dailyKeywordForToday())’예요."
     }
     
     private func configureHeaderForDoneBooks() {
-        headerFirstLineLabel.text = "끝까지 읽은 책만 책장에 꽂아두었어요."
-        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 독서 기록을 확인해보세요."
         headerCommentLabel.text = "지금까지 \(doneBooks.count)권의 책이 이 책장에 꽂혔어요."
     }
     
     private func configureHeaderForWishBooks() {
-        headerFirstLineLabel.text = "읽고 싶은 책만 책장에 꽂아두었어요."
-        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 책 정보를 확인해보세요."
         headerCommentLabel.text = "지금까지 \(wishBooks.count)권의 책이 위시 책장에 꽂혔어요."
     }
     
     private func configureHeaderForReadingBooks() {
-        headerFirstLineLabel.text = "현재 읽고 있는 책만 책장에 꽂아두었어요."
-        headerSecondLineLabel.text = "선반에 진열된 책을 눌러 독서 기록을 이어가보세요."
         headerCommentLabel.text = "지금 \(readingBooks.count)권의 책을 읽고 있어요."
     }
     
