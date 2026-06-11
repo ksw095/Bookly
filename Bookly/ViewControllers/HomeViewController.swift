@@ -19,6 +19,7 @@ final class HomeViewController: UIViewController {
     private var todayCollectionView: UICollectionView!
     private var readingCollectionView: UICollectionView!
     
+    private let onboardingGuideCardView = UIView()
     private let libraryShortcutView = UIView()
     private let readingSectionTitleLabel = UILabel()
     private let readingSectionSubtitleLabel = UILabel()
@@ -27,6 +28,12 @@ final class HomeViewController: UIViewController {
     
     private var readingBooks: [Book] {
         store.readingBooks
+    }
+    
+    private var isLibraryCompletelyEmpty: Bool {
+        store.count(for: .wish) == 0 &&
+        store.count(for: .reading) == 0 &&
+        store.count(for: .done) == 0
     }
     
     private let navyColor = UIColor(red: 0.02, green: 0.10, blue: 0.28, alpha: 1.0)
@@ -56,6 +63,7 @@ final class HomeViewController: UIViewController {
         title = ""
         view.backgroundColor = navyColor
         navigationController?.setNavigationBarHidden(true, animated: false)
+        
         configureUI()
         configureNotification()
         loadTodayBooks()
@@ -104,6 +112,7 @@ final class HomeViewController: UIViewController {
         configureScrollView()
         configureTodayBooksSection()
         configureReadingSection()
+        configureOnboardingGuideCard()
         configureLibraryShortcut()
     }
     
@@ -315,6 +324,75 @@ final class HomeViewController: UIViewController {
         contentStackView.addArrangedSubview(readingCollectionView)
     }
     
+    private func configureOnboardingGuideCard() {
+        onboardingGuideCardView.translatesAutoresizingMaskIntoConstraints = false
+        onboardingGuideCardView.backgroundColor = .systemBackground
+        onboardingGuideCardView.layer.cornerRadius = 22
+        onboardingGuideCardView.clipsToBounds = true
+        
+        let stepOne = makeGuideStepView(
+            number: "1",
+            iconName: "bookmark.fill",
+            title: "읽고 싶은 책을 WISH에 담기",
+            description: "관심 있는 책을 검색하고 나만의 서재를 만들어보세요."
+        )
+        
+        let stepTwo = makeGuideStepView(
+            number: "2",
+            iconName: "book.fill",
+            title: "읽기 시작한 책은 READING으로 이동",
+            description: "읽고 있는 책을 등록하고, 독서 여정을 관리하세요."
+        )
+        
+        let stepThree = makeGuideStepView(
+            number: "3",
+            iconName: "checkmark.circle.fill",
+            title: "다 읽은 책은 잊지 않고 기록 남기기",
+            description: "완독 후 독서 기록을 남기고 독서 카드를 공유해보세요."
+        )
+        
+        let stepStackView = UIStackView(arrangedSubviews: [
+            stepOne,
+            stepTwo,
+            stepThree
+        ])
+        stepStackView.translatesAutoresizingMaskIntoConstraints = false
+        stepStackView.axis = .vertical
+        stepStackView.spacing = 0
+        stepStackView.distribution = .fillEqually
+        
+        let searchButton = UIButton(type: .system)
+        searchButton.translatesAutoresizingMaskIntoConstraints = false
+        searchButton.setTitle("책 검색하러 가기  →", for: .normal)
+        searchButton.setTitleColor(navyColor, for: .normal)
+        searchButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        searchButton.backgroundColor = .clear
+        searchButton.layer.cornerRadius = 18
+        searchButton.layer.borderWidth = 1
+        searchButton.layer.borderColor = navyColor.withAlphaComponent(0.18).cgColor
+        searchButton.addTarget(self, action: #selector(searchButtonTapped), for: .touchUpInside)
+        
+        onboardingGuideCardView.addSubview(stepStackView)
+        onboardingGuideCardView.addSubview(searchButton)
+        
+        NSLayoutConstraint.activate([
+            onboardingGuideCardView.heightAnchor.constraint(equalToConstant: 226),
+            
+            stepStackView.topAnchor.constraint(equalTo: onboardingGuideCardView.topAnchor, constant: 22),
+            stepStackView.leadingAnchor.constraint(equalTo: onboardingGuideCardView.leadingAnchor, constant: 22),
+            stepStackView.trailingAnchor.constraint(equalTo: onboardingGuideCardView.trailingAnchor, constant: -22),
+            stepStackView.heightAnchor.constraint(equalToConstant: 144),
+            
+            searchButton.topAnchor.constraint(equalTo: stepStackView.bottomAnchor, constant: 14),
+            searchButton.centerXAnchor.constraint(equalTo: onboardingGuideCardView.centerXAnchor),
+            searchButton.widthAnchor.constraint(equalToConstant: 178),
+            searchButton.heightAnchor.constraint(equalToConstant: 38),
+            searchButton.bottomAnchor.constraint(lessThanOrEqualTo: onboardingGuideCardView.bottomAnchor, constant: -18)
+        ])
+        
+        contentStackView.addArrangedSubview(onboardingGuideCardView)
+    }
+    
     private func configureLibraryShortcut() {
         libraryShortcutView.backgroundColor = .systemBackground
         libraryShortcutView.layer.cornerRadius = 18
@@ -384,11 +462,102 @@ final class HomeViewController: UIViewController {
         contentStackView.addArrangedSubview(libraryShortcutView)
     }
     
+    private func makeGuideStepView(
+        number: String,
+        iconName: String,
+        title: String,
+        description: String
+    ) -> UIView {
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        
+        let numberCircleView = UIView()
+        numberCircleView.translatesAutoresizingMaskIntoConstraints = false
+        numberCircleView.backgroundColor = navyLightColor
+        numberCircleView.layer.cornerRadius = 12
+        numberCircleView.clipsToBounds = true
+        
+        let numberLabel = UILabel()
+        numberLabel.translatesAutoresizingMaskIntoConstraints = false
+        numberLabel.text = number
+        numberLabel.textColor = .white
+        numberLabel.font = .systemFont(ofSize: 12, weight: .bold)
+        numberLabel.textAlignment = .center
+        
+        numberCircleView.addSubview(numberLabel)
+        
+        let iconCircleView = UIView()
+        iconCircleView.translatesAutoresizingMaskIntoConstraints = false
+        iconCircleView.backgroundColor = UIColor(red: 0.94, green: 0.95, blue: 0.98, alpha: 1.0)
+        iconCircleView.layer.cornerRadius = 21
+        iconCircleView.clipsToBounds = true
+        
+        let iconImageView = UIImageView(image: UIImage(systemName: iconName))
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.tintColor = navyColor
+        iconImageView.contentMode = .scaleAspectFit
+        
+        iconCircleView.addSubview(iconImageView)
+        
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.textColor = .label
+        titleLabel.font = .systemFont(ofSize: 14, weight: .bold)
+        titleLabel.numberOfLines = 1
+        titleLabel.setContentHuggingPriority(.required, for: .vertical)
+        
+        let descriptionLabel = UILabel()
+        descriptionLabel.text = description
+        descriptionLabel.textColor = .secondaryLabel
+        descriptionLabel.font = .systemFont(ofSize: 11, weight: .regular)
+        descriptionLabel.numberOfLines = 1
+        descriptionLabel.setContentHuggingPriority(.required, for: .vertical)
+        
+        let textStackView = UIStackView(arrangedSubviews: [
+            titleLabel,
+            descriptionLabel
+        ])
+        textStackView.translatesAutoresizingMaskIntoConstraints = false
+        textStackView.axis = .vertical
+        textStackView.spacing = 3
+        
+        container.addSubview(numberCircleView)
+        container.addSubview(iconCircleView)
+        container.addSubview(textStackView)
+        
+        NSLayoutConstraint.activate([
+            numberCircleView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            numberCircleView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            numberCircleView.widthAnchor.constraint(equalToConstant: 24),
+            numberCircleView.heightAnchor.constraint(equalToConstant: 24),
+            
+            numberLabel.centerXAnchor.constraint(equalTo: numberCircleView.centerXAnchor),
+            numberLabel.centerYAnchor.constraint(equalTo: numberCircleView.centerYAnchor),
+            
+            iconCircleView.leadingAnchor.constraint(equalTo: numberCircleView.trailingAnchor, constant: 18),
+            iconCircleView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            iconCircleView.widthAnchor.constraint(equalToConstant: 42),
+            iconCircleView.heightAnchor.constraint(equalToConstant: 42),
+            
+            iconImageView.centerXAnchor.constraint(equalTo: iconCircleView.centerXAnchor),
+            iconImageView.centerYAnchor.constraint(equalTo: iconCircleView.centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 19),
+            iconImageView.heightAnchor.constraint(equalToConstant: 19),
+            
+            textStackView.leadingAnchor.constraint(equalTo: iconCircleView.trailingAnchor, constant: 14),
+            textStackView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            textStackView.centerYAnchor.constraint(equalTo: container.centerYAnchor)
+        ])
+        
+        return container
+    }
+    
     private func reloadData() {
         todayCollectionView?.reloadData()
         readingCollectionView?.reloadData()
         updateHeaderStats()
         updateReadingSectionVisibility()
+        updateOnboardingGuideVisibility()
     }
     
     private func updateHeaderStats() {
@@ -405,6 +574,10 @@ final class HomeViewController: UIViewController {
         }
         
         readingCollectionView?.isHidden = !shouldShow
+    }
+    
+    private func updateOnboardingGuideVisibility() {
+        onboardingGuideCardView.isHidden = !isLibraryCompletelyEmpty
     }
     
     private func makeHeaderStatusItem(
@@ -584,6 +757,10 @@ final class HomeViewController: UIViewController {
     
     @objc private func libraryShortcutTapped() {
         tabBarController?.selectedIndex = 2
+    }
+    
+    @objc private func searchButtonTapped() {
+        tabBarController?.selectedIndex = 1
     }
     
     private func pushDetail(book: Book) {
