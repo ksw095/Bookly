@@ -31,6 +31,8 @@ final class BookDetailViewController: UIViewController {
     private let navyColor = UIColor(red: 0.02, green: 0.10, blue: 0.28, alpha: 1.0)
     private let purpleColor = UIColor(red: 0.33, green: 0.25, blue: 0.94, alpha: 1.0)
     private let mutedTextColor = UIColor(red: 0.55, green: 0.56, blue: 0.62, alpha: 1.0)
+    private let backgroundColor = UIColor(red: 0.96, green: 0.97, blue: 0.99, alpha: 1.0)
+    private let textColor = UIColor(red: 0.08, green: 0.09, blue: 0.12, alpha: 1.0)
     
     init(book: Book) {
         self.book = book
@@ -53,11 +55,17 @@ final class BookDetailViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "독서 기록"
-        view.backgroundColor = UIColor(red: 0.96, green: 0.97, blue: 0.99, alpha: 1.0)
+        view.backgroundColor = backgroundColor
         
         configureNavigation()
         configureUI()
+        configureKeyboardDismiss()
         applyBookData()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        dismissKeyboard()
     }
     
     private func configureNavigation() {
@@ -86,8 +94,24 @@ final class BookDetailViewController: UIViewController {
         configureActionButtons()
     }
     
+    private func configureKeyboardDismiss() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delegate = self
+        view.addGestureRecognizer(tapGesture)
+        
+        scrollView.keyboardDismissMode = .interactive
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
     private func configureScrollView() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.keyboardDismissMode = .interactive
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.alwaysBounceVertical = true
         
         contentStackView.translatesAutoresizingMaskIntoConstraints = false
         contentStackView.axis = .vertical
@@ -119,23 +143,23 @@ final class BookDetailViewController: UIViewController {
         thumbnailImageView.contentMode = .scaleAspectFill
         thumbnailImageView.clipsToBounds = true
         thumbnailImageView.layer.cornerRadius = 10
-        thumbnailImageView.backgroundColor = .secondarySystemBackground
+        thumbnailImageView.backgroundColor = UIColor(red: 0.94, green: 0.95, blue: 0.98, alpha: 1.0)
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .boldSystemFont(ofSize: 20)
+        titleLabel.font = .boldSystemFont(ofSize: 19)
         titleLabel.textColor = navyColor
         titleLabel.numberOfLines = 2
         titleLabel.lineBreakMode = .byTruncatingTail
         
         authorLabel.translatesAutoresizingMaskIntoConstraints = false
         authorLabel.font = .systemFont(ofSize: 14, weight: .medium)
-        authorLabel.textColor = .secondaryLabel
+        authorLabel.textColor = mutedTextColor
         authorLabel.numberOfLines = 1
         authorLabel.lineBreakMode = .byTruncatingTail
         
         publisherLabel.translatesAutoresizingMaskIntoConstraints = false
         publisherLabel.font = .systemFont(ofSize: 13, weight: .regular)
-        publisherLabel.textColor = .secondaryLabel
+        publisherLabel.textColor = mutedTextColor
         publisherLabel.numberOfLines = 1
         publisherLabel.lineBreakMode = .byTruncatingTail
         
@@ -183,14 +207,11 @@ final class BookDetailViewController: UIViewController {
     
     private func configureRatingSection() {
         let container = makeCardView()
-        let title = makeSectionTitle("평점")
+        let sectionTitleLabel = makeSectionTitle("평점")
         
         ratingView.translatesAutoresizingMaskIntoConstraints = false
         ratingView.onRatingChanged = { [weak self] rating in
-            guard let self else {
-                return
-            }
-            
+            guard let self else { return }
             self.book.ratingValue = rating
             self.book.rating = Int(rating.rounded())
             self.updateRatingValueLabel()
@@ -201,18 +222,12 @@ final class BookDetailViewController: UIViewController {
         ratingValueLabel.textColor = .systemOrange
         ratingValueLabel.textAlignment = .right
         
-        let topStack = UIStackView(arrangedSubviews: [
-            title,
-            ratingValueLabel
-        ])
+        let topStack = UIStackView(arrangedSubviews: [sectionTitleLabel, ratingValueLabel])
         topStack.axis = .horizontal
         topStack.alignment = .center
         topStack.distribution = .fillEqually
         
-        let stack = UIStackView(arrangedSubviews: [
-            topStack,
-            ratingView
-        ])
+        let stack = UIStackView(arrangedSubviews: [topStack, ratingView])
         stack.axis = .vertical
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -243,36 +258,20 @@ final class BookDetailViewController: UIViewController {
         periodSummaryLabel.textAlignment = .right
         periodSummaryLabel.numberOfLines = 1
         
-        let topStack = UIStackView(arrangedSubviews: [
-            titleLabel,
-            periodSummaryLabel
-        ])
+        let topStack = UIStackView(arrangedSubviews: [titleLabel, periodSummaryLabel])
         topStack.axis = .horizontal
         topStack.alignment = .center
         topStack.distribution = .fillEqually
         
-        let startRow = makeCompactDatePickerRow(
-            title: "시작",
-            picker: startDatePicker
-        )
+        let startRow = makeCompactDatePickerRow(title: "시작", picker: startDatePicker)
+        let endRow = makeCompactDatePickerRow(title: "종료", picker: endDatePicker)
         
-        let endRow = makeCompactDatePickerRow(
-            title: "종료",
-            picker: endDatePicker
-        )
-        
-        let dateStack = UIStackView(arrangedSubviews: [
-            startRow,
-            endRow
-        ])
+        let dateStack = UIStackView(arrangedSubviews: [startRow, endRow])
         dateStack.axis = .horizontal
         dateStack.spacing = 8
         dateStack.distribution = .fillEqually
         
-        let stack = UIStackView(arrangedSubviews: [
-            topStack,
-            dateStack
-        ])
+        let stack = UIStackView(arrangedSubviews: [topStack, dateStack])
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.axis = .vertical
         stack.spacing = 9
@@ -291,13 +290,10 @@ final class BookDetailViewController: UIViewController {
         ])
     }
     
-    private func makeCompactDatePickerRow(
-        title: String,
-        picker: UIDatePicker
-    ) -> UIView {
+    private func makeCompactDatePickerRow(title: String, picker: UIDatePicker) -> UIView {
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
-        container.backgroundColor = UIColor(red: 0.96, green: 0.97, blue: 0.99, alpha: 1.0)
+        container.backgroundColor = backgroundColor
         container.layer.cornerRadius = 11
         container.clipsToBounds = true
         
@@ -313,7 +309,6 @@ final class BookDetailViewController: UIViewController {
         picker.locale = Locale(identifier: "ko_KR")
         picker.tintColor = navyColor
         picker.addTarget(self, action: #selector(datePickerChanged), for: .valueChanged)
-        
         picker.transform = CGAffineTransform(scaleX: 0.82, y: 0.82)
         picker.setContentCompressionResistancePriority(.required, for: .horizontal)
         picker.setContentHuggingPriority(.required, for: .horizontal)
@@ -393,9 +388,9 @@ final class BookDetailViewController: UIViewController {
         titleLabel.text = book.title
         authorLabel.text = book.authorText
         publisherLabel.text = book.publisher.isEmpty ? "출판사 정보 없음" : "출판사 \(book.publisher)"
-        isbnLabel.text = book.isbn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        ? "ISBN 정보 없음"
-        : "ISBN \(book.isbn)"
+        
+        let trimmedISBN = book.isbn.trimmingCharacters(in: .whitespacesAndNewlines)
+        isbnLabel.text = trimmedISBN.isEmpty ? "ISBN 정보 없음" : "ISBN \(trimmedISBN)"
         
         ratingView.setRating(book.displayRating)
         updateRatingValueLabel()
@@ -404,7 +399,7 @@ final class BookDetailViewController: UIViewController {
         let endDate = book.readingFinishedAt ?? Date()
         
         startDatePicker.date = startDate
-        endDatePicker.date = endDate
+        endDatePicker.date = maxDate(endDate, startDate)
         
         oneLineTextView.text = book.shortReviewText
         memoTextView.text = book.memoText
@@ -442,15 +437,16 @@ final class BookDetailViewController: UIViewController {
         let descriptionLabel = UILabel()
         descriptionLabel.text = description
         descriptionLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        descriptionLabel.textColor = .secondaryLabel
+        descriptionLabel.textColor = mutedTextColor
         descriptionLabel.numberOfLines = 0
         
         textView.font = .systemFont(ofSize: 15, weight: .regular)
-        textView.textColor = .label
-        textView.backgroundColor = UIColor(red: 0.96, green: 0.97, blue: 0.99, alpha: 1.0)
+        textView.textColor = textColor
+        textView.backgroundColor = backgroundColor
         textView.layer.cornerRadius = 14
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 10, bottom: 12, right: 10)
         textView.translatesAutoresizingMaskIntoConstraints = false
+        textView.keyboardDismissMode = .interactive
         
         let stack = UIStackView(arrangedSubviews: [
             titleLabel,
@@ -517,30 +513,31 @@ final class BookDetailViewController: UIViewController {
         BookStore.shared.updateBook(book)
     }
     
+    private func maxDate(_ lhs: Date, _ rhs: Date) -> Date {
+        return lhs >= rhs ? lhs : rhs
+    }
+    
     @objc private func datePickerChanged() {
         updateReadingPeriodSummary()
     }
     
     @objc private func saveButtonTapped() {
+        dismissKeyboard()
         saveCurrentInputs()
         navigationController?.popViewController(animated: true)
     }
     
     @objc private func shareButtonTapped() {
+        dismissKeyboard()
         saveCurrentInputs()
         
-        let cardImage = makeReadingCardImage()
-        let activityVC = UIActivityViewController(activityItems: [cardImage], applicationActivities: nil)
-        
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = shareButton
-            popover.sourceRect = shareButton.bounds
-        }
-        
-        present(activityVC, animated: true)
+        let cardShareVC = CardShareViewController(book: book)
+        navigationController?.pushViewController(cardShareVC, animated: true)
     }
     
     @objc private func deleteButtonTapped() {
+        dismissKeyboard()
+        
         let alert = UIAlertController(
             title: "독서 기록을 삭제할까요?",
             message: "삭제한 기록은 복구할 수 없습니다.",
@@ -550,103 +547,29 @@ final class BookDetailViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "취소", style: .cancel))
         
         alert.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
-            guard let self else {
-                return
-            }
-            
+            guard let self else { return }
             BookStore.shared.deleteBook(self.book)
             self.navigationController?.popViewController(animated: true)
         })
         
         present(alert, animated: true)
     }
-    
-    private func makeReadingCardImage() -> UIImage {
-        let cardWidth: CGFloat = 900
-        let cardHeight: CGFloat = 1200
-        
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: cardWidth, height: cardHeight))
-        
-        return renderer.image { context in
-            let cgContext = context.cgContext
-            
-            navyColor.setFill()
-            cgContext.fill(CGRect(x: 0, y: 0, width: cardWidth, height: cardHeight))
-            
-            let logo = "Bookly" as NSString
-            logo.draw(
-                at: CGPoint(x: 70, y: 70),
-                withAttributes: [
-                    .font: UIFont(name: "Georgia-BoldItalic", size: 70) ?? UIFont.italicSystemFont(ofSize: 70),
-                    .foregroundColor: UIColor.white
-                ]
-            )
-            
-            let title = book.title as NSString
-            title.draw(
-                in: CGRect(x: 70, y: 190, width: cardWidth - 140, height: 130),
-                withAttributes: [
-                    .font: UIFont.boldSystemFont(ofSize: 48),
-                    .foregroundColor: UIColor.white
-                ]
-            )
-            
-            let author = book.authorText as NSString
-            author.draw(
-                in: CGRect(x: 70, y: 330, width: cardWidth - 140, height: 60),
-                withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 28, weight: .medium),
-                    .foregroundColor: UIColor.white.withAlphaComponent(0.75)
-                ]
-            )
-            
-            let rating = "★ \(String(format: "%.1f", book.displayRating)) / 5" as NSString
-            rating.draw(
-                at: CGPoint(x: 70, y: 430),
-                withAttributes: [
-                    .font: UIFont.boldSystemFont(ofSize: 34),
-                    .foregroundColor: UIColor.systemOrange
-                ]
-            )
-            
-            let period = "읽은 기간 · \(book.readingPeriodText)" as NSString
-            period.draw(
-                at: CGPoint(x: 70, y: 485),
-                withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 26, weight: .semibold),
-                    .foregroundColor: UIColor.white.withAlphaComponent(0.72)
-                ]
-            )
-            
-            let reviewText = book.shortReviewText.isEmpty ? "아직 한줄평이 없습니다." : "“\(book.shortReviewText)”"
-            let review = reviewText as NSString
-            review.draw(
-                in: CGRect(x: 70, y: 560, width: cardWidth - 140, height: 170),
-                withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 38, weight: .bold),
-                    .foregroundColor: UIColor.white
-                ]
-            )
-            
-            let quoteText = book.quoteText.isEmpty ? "" : "필사 문구\n\(book.quoteText)"
-            let quote = quoteText as NSString
-            quote.draw(
-                in: CGRect(x: 70, y: 780, width: cardWidth - 140, height: 220),
-                withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 28, weight: .regular),
-                    .foregroundColor: UIColor.white.withAlphaComponent(0.78)
-                ]
-            )
-            
-            let footer = "나의 독서 기록 · Bookly" as NSString
-            footer.draw(
-                at: CGPoint(x: 70, y: 1100),
-                withAttributes: [
-                    .font: UIFont.systemFont(ofSize: 24, weight: .semibold),
-                    .foregroundColor: UIColor.white.withAlphaComponent(0.55)
-                ]
-            )
+}
+
+extension BookDetailViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldReceive touch: UITouch
+    ) -> Bool {
+        if touch.view is UIControl {
+            return false
         }
+        
+        if touch.view is UITextView || touch.view is UITextField {
+            return false
+        }
+        
+        return true
     }
 }
 

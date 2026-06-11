@@ -88,6 +88,7 @@ final class SearchViewController: UIViewController {
         navigationController?.setNavigationBarHidden(true, animated: false)
         
         configureUI()
+        configureKeyboardDismiss()
         updateEmptyState(message: "검색어를 입력해 도서를 찾아보세요.")
     }
     
@@ -105,7 +106,7 @@ final class SearchViewController: UIViewController {
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        searchTextField.resignFirstResponder()
+        dismissKeyboard()
     }
     
     private func configureUI() {
@@ -113,6 +114,20 @@ final class SearchViewController: UIViewController {
         configureSearchArea()
         configureResultArea()
         configureLayout()
+    }
+    
+    private func configureKeyboardDismiss() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        tapGesture.delegate = self
+        view.addGestureRecognizer(tapGesture)
+        
+        tableView.keyboardDismissMode = .interactive
+    }
+    
+    @objc private func dismissKeyboard() {
+        searchTextField.resignFirstResponder()
+        view.endEditing(true)
     }
     
     private func configureHeader() {
@@ -222,7 +237,7 @@ final class SearchViewController: UIViewController {
         tableView.delegate = self
         tableView.register(BookTableViewCell.self, forCellReuseIdentifier: BookTableViewCell.identifier)
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        tableView.keyboardDismissMode = .onDrag
+        tableView.keyboardDismissMode = .interactive
         tableView.backgroundColor = .white
         tableView.separatorStyle = .none
         tableView.rowHeight = 142
@@ -343,10 +358,9 @@ final class SearchViewController: UIViewController {
             title: "정확도순",
             state: selectedSort == .accuracy ? .on : .off
         ) { [weak self] _ in
-            guard let self else {
-                return
-            }
+            guard let self else { return }
             
+            self.dismissKeyboard()
             self.selectedSort = .accuracy
             self.configureSortButton()
             
@@ -359,10 +373,9 @@ final class SearchViewController: UIViewController {
             title: "최신순",
             state: selectedSort == .recency ? .on : .off
         ) { [weak self] _ in
-            guard let self else {
-                return
-            }
+            guard let self else { return }
             
+            self.dismissKeyboard()
             self.selectedSort = .recency
             self.configureSortButton()
             
@@ -375,6 +388,8 @@ final class SearchViewController: UIViewController {
     }
     
     @objc private func targetChanged() {
+        dismissKeyboard()
+        
         selectedTarget = SearchTarget(rawValue: targetSegmentedControl.selectedSegmentIndex) ?? .title
         
         guard !currentKeyword.isEmpty else {
@@ -390,6 +405,8 @@ final class SearchViewController: UIViewController {
         guard !trimmedKeyword.isEmpty else {
             return
         }
+        
+        dismissKeyboard()
         
         currentKeyword = trimmedKeyword
         currentPage = 1
@@ -584,7 +601,7 @@ final class SearchViewController: UIViewController {
 
 extension SearchViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        textField.resignFirstResponder()
+        dismissKeyboard()
         startNewSearch(keyword: textField.text ?? "")
         return true
     }
@@ -613,12 +630,29 @@ extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        searchTextField.resignFirstResponder()
+        dismissKeyboard()
         
         let document = searchResults[indexPath.row]
         let detailVC = SearchBookDetailViewController(document: document)
         
         navigationController?.setNavigationBarHidden(false, animated: false)
         navigationController?.pushViewController(detailVC, animated: true)
+    }
+}
+
+extension SearchViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldReceive touch: UITouch
+    ) -> Bool {
+        if touch.view is UIControl {
+            return false
+        }
+        
+        if touch.view is UITextField || touch.view is UITextView {
+            return false
+        }
+        
+        return true
     }
 }
