@@ -549,6 +549,7 @@ final class AccountViewController: UIViewController {
     private func logout() {
         do {
             try Auth.auth().signOut()
+            BookStore.shared.stopListeningAndClear()
             moveToAuthScreen()
         } catch {
             showSimpleAlert(
@@ -587,50 +588,67 @@ final class AccountViewController: UIViewController {
         
         let uid = user.uid
         
-        db.collection("users")
-            .document(uid)
-            .delete { [weak self] firestoreError in
-                guard let self else {
-                    return
-                }
-                
-                if let firestoreError {
-                    DispatchQueue.main.async {
-                        self.showSimpleAlert(
-                            title: "탈퇴 실패",
-                            message: "사용자 데이터 삭제 중 오류가 발생했어요.\n\(firestoreError.localizedDescription)"
-                        )
-                    }
-                    return
-                }
-                
-                user.delete { [weak self] authError in
-                    DispatchQueue.main.async {
-                        guard let self else {
-                            return
-                        }
-                        
-                        if let authError {
-                            let nsError = authError as NSError
-                            
-                            if nsError.code == 17014 {
-                                self.showSimpleAlert(
-                                    title: "다시 로그인 필요",
-                                    message: "보안을 위해 최근 로그인 후에만 탈퇴할 수 있어요.\n로그아웃 후 다시 로그인하고 탈퇴를 시도해주세요."
-                                )
-                            } else {
-                                self.showSimpleAlert(
-                                    title: "탈퇴 실패",
-                                    message: "계정 삭제 중 오류가 발생했어요.\n\(authError.localizedDescription)"
-                                )
-                            }
-                            return
-                        }
-                        
-                        self.moveToAuthScreen()
-                    }
-                }
+        BookStore.shared.deleteAllBooks(for: uid) { [weak self] booksDeleteError in
+            guard let self else {
+                return
             }
+            
+            if let booksDeleteError {
+                DispatchQueue.main.async {
+                    self.showSimpleAlert(
+                        title: "탈퇴 실패",
+                        message: "책장 데이터 삭제 중 오류가 발생했어요.\n\(booksDeleteError.localizedDescription)"
+                    )
+                }
+                return
+            }
+            
+            self.db.collection("users")
+                .document(uid)
+                .delete { [weak self] firestoreError in
+                    guard let self else {
+                        return
+                    }
+                    
+                    if let firestoreError {
+                        DispatchQueue.main.async {
+                            self.showSimpleAlert(
+                                title: "탈퇴 실패",
+                                message: "사용자 데이터 삭제 중 오류가 발생했어요.\n\(firestoreError.localizedDescription)"
+                            )
+                        }
+                        return
+                    }
+                    
+                    user.delete { [weak self] authError in
+                        DispatchQueue.main.async {
+                            guard let self else {
+                                return
+                            }
+                            
+                            if let authError {
+                                let nsError = authError as NSError
+                                
+                                if nsError.code == 17014 {
+                                    self.showSimpleAlert(
+                                        title: "다시 로그인 필요",
+                                        message: "보안을 위해 최근 로그인 후에만 탈퇴할 수 있어요.\n로그아웃 후 다시 로그인하고 탈퇴를 시도해주세요."
+                                    )
+                                } else {
+                                    self.showSimpleAlert(
+                                        title: "탈퇴 실패",
+                                        message: "계정 삭제 중 오류가 발생했어요.\n\(authError.localizedDescription)"
+                                    )
+                                }
+                                return
+                            }
+                            
+                            BookStore.shared.stopListeningAndClear()
+                            self.moveToAuthScreen()
+                        }
+                    }
+                }
+        }
     }
     
     private func moveToAuthScreen() {
@@ -804,7 +822,7 @@ private final class TermsViewController: UIViewController {
 
         제8조 기타
 
-        본 약관은 앱 기능 변경에 따라 수정될 수 있습니다.
+        본 약관은 앱 기능 및 버전 변경에 따라 수정될 수 있습니다.
         """
     }
 }

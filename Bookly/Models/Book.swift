@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseFirestore
 
 struct Book: Codable, Equatable {
     var id: String
@@ -121,5 +122,113 @@ struct Book: Codable, Equatable {
         }
         
         return "\(startText) - 진행 중"
+    }
+}
+
+// MARK: - Firestore Mapping
+
+extension Book {
+    func toFirestoreData() -> [String: Any] {
+        var data: [String: Any] = [
+            "id": id,
+            "title": title,
+            "authors": authors,
+            "publisher": publisher,
+            "isbn": isbn,
+            "datetime": datetime,
+            "thumbnail": thumbnail,
+            "status": status.rawValue,
+            "rating": rating,
+            "memo": memo,
+            "createdAt": Timestamp(date: createdAt),
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        if let ratingValue {
+            data["ratingValue"] = ratingValue
+        }
+        
+        if let shortReview {
+            data["shortReview"] = shortReview
+        }
+        
+        if let quote {
+            data["quote"] = quote
+        }
+        
+        if let readingStartedAt {
+            data["readingStartedAt"] = Timestamp(date: readingStartedAt)
+        }
+        
+        if let readingFinishedAt {
+            data["readingFinishedAt"] = Timestamp(date: readingFinishedAt)
+        }
+        
+        if let progress {
+            data["progress"] = progress
+        }
+        
+        return data
+    }
+    
+    init?(documentId: String, data: [String: Any]) {
+        let id = data["id"] as? String ?? documentId
+        
+        guard let title = data["title"] as? String else {
+            return nil
+        }
+        
+        let authors = data["authors"] as? [String] ?? []
+        let publisher = data["publisher"] as? String ?? ""
+        let isbn = data["isbn"] as? String ?? ""
+        let datetime = data["datetime"] as? String ?? ""
+        let thumbnail = data["thumbnail"] as? String ?? ""
+        
+        let statusRawValue = data["status"] as? String ?? BookStatus.wish.rawValue
+        let status = BookStatus(rawValue: statusRawValue) ?? .wish
+        
+        let rating = data["rating"] as? Int ?? 0
+        let ratingValue = data["ratingValue"] as? Double
+        
+        let memo = data["memo"] as? String ?? ""
+        let shortReview = data["shortReview"] as? String
+        let quote = data["quote"] as? String
+        
+        let createdAt = Book.firestoreDate(from: data["createdAt"]) ?? Date()
+        let readingStartedAt = Book.firestoreDate(from: data["readingStartedAt"])
+        let readingFinishedAt = Book.firestoreDate(from: data["readingFinishedAt"])
+        let progress = data["progress"] as? Double
+        
+        self.init(
+            id: id,
+            title: title,
+            authors: authors,
+            publisher: publisher,
+            isbn: isbn,
+            datetime: datetime,
+            thumbnail: thumbnail,
+            status: status,
+            rating: rating,
+            ratingValue: ratingValue,
+            memo: memo,
+            shortReview: shortReview,
+            quote: quote,
+            createdAt: createdAt,
+            readingStartedAt: readingStartedAt,
+            readingFinishedAt: readingFinishedAt,
+            progress: progress
+        )
+    }
+    
+    private static func firestoreDate(from value: Any?) -> Date? {
+        if let timestamp = value as? Timestamp {
+            return timestamp.dateValue()
+        }
+        
+        if let date = value as? Date {
+            return date
+        }
+        
+        return nil
     }
 }

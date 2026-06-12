@@ -530,6 +530,8 @@ final class AuthViewController: UIViewController {
     }
     
     private func moveToMainScreen() {
+        BookStore.shared.startListeningForCurrentUser()
+        
         guard let sceneDelegate = view.window?.windowScene?.delegate as? SceneDelegate else {
             return
         }

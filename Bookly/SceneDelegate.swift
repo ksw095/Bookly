@@ -20,8 +20,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.overrideUserInterfaceStyle = .light
         
         if Auth.auth().currentUser != nil {
+            BookStore.shared.startListeningForCurrentUser()
             window.rootViewController = makeRootTabBarController()
         } else {
+            BookStore.shared.stopListeningAndClear()
             window.rootViewController = AuthViewController()
         }
         
@@ -34,6 +36,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
         
+        BookStore.shared.startListeningForCurrentUser()
         let mainTabBarController = makeRootTabBarController()
         
         UIView.transition(
@@ -50,6 +53,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let window else {
             return
         }
+        
+        BookStore.shared.stopListeningAndClear()
         
         UIView.transition(
             with: window,
