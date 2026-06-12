@@ -32,12 +32,6 @@ final class HomeViewController: UIViewController {
         store.readingBooks
     }
     
-    private var isLibraryCompletelyEmpty: Bool {
-        store.count(for: .wish) == 0 &&
-        store.count(for: .reading) == 0 &&
-        store.count(for: .done) == 0
-    }
-    
     private let navyColor = UIColor(red: 0.02, green: 0.10, blue: 0.28, alpha: 1.0)
     private let navyLightColor = UIColor(red: 0.20, green: 0.26, blue: 0.47, alpha: 1.0)
     private let backgroundColor = UIColor(red: 0.95, green: 0.96, blue: 0.99, alpha: 1.0)
@@ -375,7 +369,7 @@ final class HomeViewController: UIViewController {
             number: "2",
             iconName: "book.fill",
             title: "읽기 시작한 책은 READING으로 이동",
-            description: "읽고 있는 책을 등록하고, 독서 여정을 관리하세요."
+            description: "읽는 중인 책이 등록되면 메인화면에서 진행도를 바로 확인할 수 있어요."
         )
         
         let stepThree = makeGuideStepView(
@@ -410,12 +404,12 @@ final class HomeViewController: UIViewController {
         onboardingGuideCardView.addSubview(searchButton)
         
         NSLayoutConstraint.activate([
-            onboardingGuideCardView.heightAnchor.constraint(equalToConstant: 226),
+            onboardingGuideCardView.heightAnchor.constraint(equalToConstant: 252),
             
             stepStackView.topAnchor.constraint(equalTo: onboardingGuideCardView.topAnchor, constant: 22),
             stepStackView.leadingAnchor.constraint(equalTo: onboardingGuideCardView.leadingAnchor, constant: 22),
             stepStackView.trailingAnchor.constraint(equalTo: onboardingGuideCardView.trailingAnchor, constant: -22),
-            stepStackView.heightAnchor.constraint(equalToConstant: 144),
+            stepStackView.heightAnchor.constraint(equalToConstant: 168),
             
             searchButton.topAnchor.constraint(equalTo: stepStackView.bottomAnchor, constant: 14),
             searchButton.centerXAnchor.constraint(equalTo: onboardingGuideCardView.centerXAnchor),
@@ -544,7 +538,7 @@ final class HomeViewController: UIViewController {
         descriptionLabel.text = description
         descriptionLabel.textColor = .secondaryLabel
         descriptionLabel.font = .systemFont(ofSize: 11, weight: .regular)
-        descriptionLabel.numberOfLines = 1
+        descriptionLabel.numberOfLines = 2
         descriptionLabel.setContentHuggingPriority(.required, for: .vertical)
         
         let textStackView = UIStackView(arrangedSubviews: [
@@ -611,7 +605,7 @@ final class HomeViewController: UIViewController {
     }
     
     private func updateOnboardingGuideVisibility() {
-        onboardingGuideCardView.isHidden = !isLibraryCompletelyEmpty
+        onboardingGuideCardView.isHidden = !readingBooks.isEmpty
     }
     
     private func makeHeaderStatusItem(
