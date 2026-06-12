@@ -1,4 +1,5 @@
 import UIKit
+import FirebaseAuth
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
@@ -16,9 +17,48 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = makeRootTabBarController()
+        window.overrideUserInterfaceStyle = .light
+        
+        if Auth.auth().currentUser != nil {
+            window.rootViewController = makeRootTabBarController()
+        } else {
+            window.rootViewController = AuthViewController()
+        }
+        
         window.makeKeyAndVisible()
         self.window = window
+    }
+    
+    func showMainScreen() {
+        guard let window else {
+            return
+        }
+        
+        let mainTabBarController = makeRootTabBarController()
+        
+        UIView.transition(
+            with: window,
+            duration: 0.28,
+            options: [.transitionCrossDissolve],
+            animations: {
+                window.rootViewController = mainTabBarController
+            }
+        )
+    }
+    
+    func showAuthScreen() {
+        guard let window else {
+            return
+        }
+        
+        UIView.transition(
+            with: window,
+            duration: 0.28,
+            options: [.transitionCrossDissolve],
+            animations: {
+                window.rootViewController = AuthViewController()
+            }
+        )
     }
     
     private func makeRootTabBarController() -> UITabBarController {
@@ -120,11 +160,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         appearance.inlineLayoutAppearance.normal.titleTextAttributes = normalAttributes
         appearance.inlineLayoutAppearance.normal.iconColor = normalColor
+        
         appearance.inlineLayoutAppearance.selected.titleTextAttributes = selectedAttributes
         appearance.inlineLayoutAppearance.selected.iconColor = selectedColor
         
         appearance.compactInlineLayoutAppearance.normal.titleTextAttributes = normalAttributes
         appearance.compactInlineLayoutAppearance.normal.iconColor = normalColor
+        
         appearance.compactInlineLayoutAppearance.selected.titleTextAttributes = selectedAttributes
         appearance.compactInlineLayoutAppearance.selected.iconColor = selectedColor
         

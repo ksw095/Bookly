@@ -1,4 +1,5 @@
 import UIKit
+import FirebaseAuth
 
 final class HomeViewController: UIViewController {
     private let store = BookStore.shared
@@ -6,6 +7,7 @@ final class HomeViewController: UIViewController {
     private let headerView = UIView()
     private let logoLabel = UILabel()
     private let subtitleLabel = UILabel()
+    private let menuButton = UIButton(type: .system)
     private let headerStatsCardView = UIView()
     
     private let wishHeaderCountLabel = UILabel()
@@ -132,6 +134,8 @@ final class HomeViewController: UIViewController {
         subtitleLabel.textAlignment = .left
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         
+        configureMenuButton()
+        
         headerStatsCardView.backgroundColor = navyLightColor
         headerStatsCardView.layer.cornerRadius = 22
         headerStatsCardView.clipsToBounds = true
@@ -179,6 +183,7 @@ final class HomeViewController: UIViewController {
         view.addSubview(headerView)
         headerView.addSubview(logoLabel)
         headerView.addSubview(subtitleLabel)
+        headerView.addSubview(menuButton)
         headerView.addSubview(headerStatsCardView)
         
         NSLayoutConstraint.activate([
@@ -187,13 +192,18 @@ final class HomeViewController: UIViewController {
             headerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             headerView.heightAnchor.constraint(equalToConstant: 250),
             
+            menuButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 14),
+            menuButton.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -22),
+            menuButton.widthAnchor.constraint(equalToConstant: 36),
+            menuButton.heightAnchor.constraint(equalToConstant: 36),
+            
             logoLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
             logoLabel.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 22),
-            logoLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -22),
+            logoLabel.trailingAnchor.constraint(lessThanOrEqualTo: menuButton.leadingAnchor, constant: -12),
             
             subtitleLabel.topAnchor.constraint(equalTo: logoLabel.bottomAnchor, constant: 5),
             subtitleLabel.leadingAnchor.constraint(equalTo: logoLabel.leadingAnchor),
-            subtitleLabel.trailingAnchor.constraint(equalTo: logoLabel.trailingAnchor),
+            subtitleLabel.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -22),
             
             headerStatsCardView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 22),
             headerStatsCardView.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -22),
@@ -208,6 +218,30 @@ final class HomeViewController: UIViewController {
         
         wishItem.widthAnchor.constraint(equalTo: readingItem.widthAnchor).isActive = true
         readingItem.widthAnchor.constraint(equalTo: doneItem.widthAnchor).isActive = true
+    }
+    
+    private func configureMenuButton() {
+        menuButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        let image = UIImage(
+            systemName: "line.3.horizontal",
+            withConfiguration: UIImage.SymbolConfiguration(pointSize: 18, weight: .bold)
+        )
+        
+        menuButton.setImage(image, for: .normal)
+        menuButton.tintColor = .white
+        menuButton.backgroundColor = .clear
+        menuButton.layer.cornerRadius = 0
+        menuButton.clipsToBounds = false
+        menuButton.addTarget(self, action: #selector(menuButtonTapped), for: .touchUpInside)
+    }
+    
+    @objc private func menuButtonTapped() {
+        let accountVC = AccountViewController()
+        let navigationController = UINavigationController(rootViewController: accountVC)
+        navigationController.modalPresentationStyle = .fullScreen
+        navigationController.navigationBar.isHidden = true
+        present(navigationController, animated: true)
     }
     
     private func configureContentPanelView() {
