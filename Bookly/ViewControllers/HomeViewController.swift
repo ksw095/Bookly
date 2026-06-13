@@ -712,8 +712,11 @@ final class HomeViewController: UIViewController {
             do {
                 var finalDocuments: [KakaoBookDocument] = []
                 var seenKeys = Set<String>()
+                var seenSeriesKeys = Set<String>()
                 
                 let keywords = rotatedDailyKeywordsStartingFromToday()
+                let maxBooksPerKeyword = 1
+                let targetBookCount = 8
                 
                 for keyword in keywords {
                     let response = try await KakaoBookService.shared.searchBooks(
@@ -728,22 +731,35 @@ final class HomeViewController: UIViewController {
                         RecommendationFilter.isRecommendable(document)
                     }
                     
+                    var addedCountForKeyword = 0
+                    
                     for document in filteredDocuments {
-                        let key = recommendationUniqueKey(for: document)
+                        let uniqueKey = recommendationUniqueKey(for: document)
+                        let seriesKey = recommendationSeriesKey(for: document)
                         
-                        guard !seenKeys.contains(key) else {
+                        guard !seenKeys.contains(uniqueKey) else {
                             continue
                         }
                         
-                        seenKeys.insert(key)
-                        finalDocuments.append(document)
+                        guard !seenSeriesKeys.contains(seriesKey) else {
+                            continue
+                        }
                         
-                        if finalDocuments.count >= 8 {
+                        seenKeys.insert(uniqueKey)
+                        seenSeriesKeys.insert(seriesKey)
+                        finalDocuments.append(document)
+                        addedCountForKeyword += 1
+                        
+                        if finalDocuments.count >= targetBookCount {
+                            break
+                        }
+                        
+                        if addedCountForKeyword >= maxBooksPerKeyword {
                             break
                         }
                     }
                     
-                    if finalDocuments.count >= 8 {
+                    if finalDocuments.count >= targetBookCount {
                         break
                     }
                 }
@@ -781,6 +797,31 @@ final class HomeViewController: UIViewController {
         return "\(title)-\(authors)-\(publisher)"
             .lowercased()
             .replacingOccurrences(of: " ", with: "")
+    }
+    
+    private func recommendationSeriesKey(for document: KakaoBookDocument) -> String {
+        let normalizedTitle = document.title
+            .removingHTMLTags()
+            .lowercased()
+            .replacingOccurrences(of: "\\d{4}", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "\\d+", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "년", with: "")
+            .replacingOccurrences(of: "개정판", with: "")
+            .replacingOccurrences(of: "최신판", with: "")
+            .replacingOccurrences(of: "특별판", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let normalizedAuthors = document.authors
+            .joined(separator: ",")
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "")
+        
+        let normalizedPublisher = document.publisher
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "")
+        
+        return "\(normalizedTitle)-\(normalizedAuthors)-\(normalizedPublisher)"
     }
     
     @objc private func libraryShortcutTapped() {
