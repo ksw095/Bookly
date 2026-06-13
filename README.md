@@ -1,9 +1,9 @@
 <div align="center">
 
-# 📚 사용자 맞춤형 IOS 독서 기록 앱 "Bookly"
+# 📚 사용자 맞춤형 ios 독서 기록 앱 "Bookly"
 
 쉬운 도서 검색부터 도서 추천, 나만의 서재 관리, 독서 진행률 기록, 독서 카드 공유까지  
-독서 과정을 한 곳에서 관리할 수 있는 IOS 독서 기록 앱입니다.
+독서 과정을 한 곳에서 관리할 수 있는 ios 독서 기록 앱입니다.
 
 </div>
 
@@ -48,7 +48,7 @@
 
 - <strong>📝 독서 카드 공유</strong> : 완독 기록을 기반으로 독서 카드를 생성하고 이미지로 저장하거나 SNS에 바로 공유할 수 있습니다.
 
-- <strong>🔥 Firebase 계정 연동</strong> : Firebase Authentication으로 회원가입/로그인을 제공하고, 사용자별 독서 기록을 Cloud에 저장합니다.
+- <strong>🔥 Firebase 계정 연동</strong> : Firebase Authentication으로 회원가입/로그인 기능을 제공하고, 사용자별 독서 기록을 Cloud에 저장합니다.
  
 
 ---
@@ -90,32 +90,59 @@
 
 ```text
 Bookly
- ├── Firebase Authentication
+ ├── App Launch
+ │    ├── AppDelegate
+ │    │    └── FirebaseApp.configure()
+ │    │
+ │    └── SceneDelegate
+ │         ├── 로그인 상태 확인
+ │         ├── 로그인 사용자 있음
+ │         │    ├── BookStore.startListeningForCurrentUser()
+ │         │    └── Main Tab Bar 화면 표시
+ │         └── 로그인 사용자 없음
+ │              ├── BookStore.stopListeningAndClear()
+ │              └── AuthViewController 표시
+ │
+ ├── Authentication
+ │    ├── Firebase Authentication
  │    ├── 이메일 회원가입
  │    ├── 로그인
  │    ├── 비밀번호 재설정
+ │    ├── 로그아웃
  │    └── 회원 탈퇴
  │
- ├── Cloud Firestore
- │    └── users/{uid}/books/{bookId}
- │         ├── WISH 책 목록
- │         ├── READING 책 목록
- │         ├── DONE 책 목록
- │         ├── 별점 / 메모 / 한줄평
- │         ├── 필사 / 인용문
- │         └── 독서 시작일 / 완독일 / 진행률
+ ├── Data Layer
+ │    ├── BookStore
+ │    │    ├── 사용자별 책 데이터 실시간 구독
+ │    │    ├── 책 추가
+ │    │    ├── 책 수정
+ │    │    ├── 책 삭제
+ │    │    └── 기존 로컬 데이터 Firestore 마이그레이션
+ │    │
+ │    └── Cloud Firestore
+ │         └── users/{uid}/books/{bookId}
+ │              ├── WISH 책 목록
+ │              ├── READING 책 목록
+ │              ├── DONE 책 목록
+ │              ├── 별점 / 메모 / 한줄평
+ │              ├── 필사 / 인용문
+ │              └── 독서 시작일 / 완독일 / 진행률
  │
- ├── Kakao Book Search API
- │    ├── 도서 검색
- │    ├── 도서 상세 정보 조회
- │    └── 오늘의 도서 추천 데이터 수집
+ ├── External API
+ │    └── Kakao Book Search API
+ │         ├── 도서 검색
+ │         ├── 도서 상세 정보 조회
+ │         └── 오늘의 도서 추천 데이터 수집
  │
  └── UIKit ViewControllers
+      ├── AuthViewController
       ├── HomeViewController
       ├── SearchViewController
+      ├── SearchBookDetailViewController
       ├── LibraryViewController
+      ├── BookDetailViewController
       ├── RecordViewController
-      ├── AuthViewController
+      ├── CardShareViewController
       └── AccountViewController
 ```
 
@@ -174,10 +201,10 @@ cd Bookly
 open Bookly.xcodeproj
 
 # 4. Firebase 설정 파일 추가
-# GoogleService-Info.plist 파일을 Bookly 타깃에 추가합니다.
+GoogleService-Info.plist 파일을 Bookly 타깃에 추가합니다.
 
 # 5. Kakao REST API 키 설정
-# Bookly/Config/Secrets.xcconfig 파일에 REST API 키를 입력합니다.
+Bookly/Config/Secrets.xcconfig 파일에 REST API 키를 입력합니다.
 
 # 6. 시뮬레이터 또는 실제 iPhone에서 실행
 ```
