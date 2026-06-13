@@ -65,7 +65,6 @@ final class CardShareViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "독서 카드"
         view.backgroundColor = backgroundColor
         
         configureNavigation()
