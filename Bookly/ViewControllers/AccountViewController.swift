@@ -588,6 +588,35 @@ final class AccountViewController: UIViewController {
         
         let uid = user.uid
         
+        user.delete { [weak self] authError in
+            DispatchQueue.main.async {
+                guard let self else {
+                    return
+                }
+                
+                if let authError {
+                    let nsError = authError as NSError
+                    
+                    if nsError.code == 17014 {
+                        self.showSimpleAlert(
+                            title: "다시 로그인 필요",
+                            message: "보안을 위해 최근 로그인 후에만 탈퇴할 수 있어요.\n로그아웃 후 다시 로그인하고 탈퇴를 시도해주세요."
+                        )
+                    } else {
+                        self.showSimpleAlert(
+                            title: "탈퇴 실패",
+                            message: "계정 삭제 중 오류가 발생했어요.\n\(authError.localizedDescription)"
+                        )
+                    }
+                    return
+                }
+                
+                self.deleteFirestoreUserDataAfterAuthDeletion(uid: uid)
+            }
+        }
+    }
+
+    private func deleteFirestoreUserDataAfterAuthDeletion(uid: String) {
         BookStore.shared.deleteAllBooks(for: uid) { [weak self] booksDeleteError in
             guard let self else {
                 return
@@ -596,9 +625,12 @@ final class AccountViewController: UIViewController {
             if let booksDeleteError {
                 DispatchQueue.main.async {
                     self.showSimpleAlert(
-                        title: "탈퇴 실패",
-                        message: "책장 데이터 삭제 중 오류가 발생했어요.\n\(booksDeleteError.localizedDescription)"
+                        title: "일부 데이터 삭제 실패",
+                        message: "계정은 삭제되었지만 책장 데이터 삭제 중 오류가 발생했어요.\n\(booksDeleteError.localizedDescription)"
                     )
+                    
+                    BookStore.shared.stopListeningAndClear()
+                    self.moveToAuthScreen()
                 }
                 return
             }
@@ -606,46 +638,24 @@ final class AccountViewController: UIViewController {
             self.db.collection("users")
                 .document(uid)
                 .delete { [weak self] firestoreError in
-                    guard let self else {
-                        return
-                    }
-                    
-                    if let firestoreError {
-                        DispatchQueue.main.async {
-                            self.showSimpleAlert(
-                                title: "탈퇴 실패",
-                                message: "사용자 데이터 삭제 중 오류가 발생했어요.\n\(firestoreError.localizedDescription)"
-                            )
+                    DispatchQueue.main.async {
+                        guard let self else {
+                            return
                         }
-                        return
-                    }
-                    
-                    user.delete { [weak self] authError in
-                        DispatchQueue.main.async {
-                            guard let self else {
-                                return
-                            }
-                            
-                            if let authError {
-                                let nsError = authError as NSError
-                                
-                                if nsError.code == 17014 {
-                                    self.showSimpleAlert(
-                                        title: "다시 로그인 필요",
-                                        message: "보안을 위해 최근 로그인 후에만 탈퇴할 수 있어요.\n로그아웃 후 다시 로그인하고 탈퇴를 시도해주세요."
-                                    )
-                                } else {
-                                    self.showSimpleAlert(
-                                        title: "탈퇴 실패",
-                                        message: "계정 삭제 중 오류가 발생했어요.\n\(authError.localizedDescription)"
-                                    )
-                                }
-                                return
-                            }
+                        
+                        if let firestoreError {
+                            self.showSimpleAlert(
+                                title: "일부 데이터 삭제 실패",
+                                message: "계정은 삭제되었지만 사용자 문서 삭제 중 오류가 발생했어요.\n\(firestoreError.localizedDescription)"
+                            )
                             
                             BookStore.shared.stopListeningAndClear()
                             self.moveToAuthScreen()
+                            return
                         }
+                        
+                        BookStore.shared.stopListeningAndClear()
+                        self.moveToAuthScreen()
                     }
                 }
         }
@@ -712,11 +722,6 @@ private final class TermsViewController: UIViewController {
         )
         backButton.tintColor = .white
         backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
-        
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.text = "이용약관"
-        titleLabel.textColor = .white
-        titleLabel.font = .boldSystemFont(ofSize: 34)
         
         view.addSubview(headerView)
         headerView.addSubview(backButton)
