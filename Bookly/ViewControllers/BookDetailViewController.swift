@@ -13,6 +13,13 @@ final class BookDetailViewController: UIViewController {
     private let publisherLabel = UILabel()
     private let isbnLabel = UILabel()
     
+    private let statusCardView = UIView()
+    private let statusSegmentedControl = UISegmentedControl(items: [
+        BookStatus.wish.rawValue,
+        BookStatus.reading.rawValue,
+        BookStatus.done.rawValue
+    ])
+    
     private let ratingView = HalfStarRatingView()
     private let ratingValueLabel = UILabel()
     
@@ -88,6 +95,7 @@ final class BookDetailViewController: UIViewController {
     private func configureUI() {
         configureScrollView()
         configureBookCard()
+        configureStatusSection()
         configureRatingSection()
         configurePeriodSection()
         configureTextSections()
@@ -202,6 +210,73 @@ final class BookDetailViewController: UIViewController {
             isbnLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
             isbnLabel.trailingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
             isbnLabel.bottomAnchor.constraint(lessThanOrEqualTo: topCardView.bottomAnchor, constant: -18)
+        ])
+    }
+    
+    private func configureStatusSection() {
+        statusCardView.backgroundColor = .white
+        statusCardView.layer.cornerRadius = 22
+        statusCardView.translatesAutoresizingMaskIntoConstraints = false
+        
+        let sectionTitleLabel = makeSectionTitle("책 상태")
+        
+        let descriptionLabel = UILabel()
+        descriptionLabel.text = "현재 책의 독서 상태를 변경할 수 있어요."
+        descriptionLabel.font = .systemFont(ofSize: 12, weight: .medium)
+        descriptionLabel.textColor = mutedTextColor
+        descriptionLabel.numberOfLines = 0
+        
+        statusSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        statusSegmentedControl.backgroundColor = backgroundColor
+        statusSegmentedControl.selectedSegmentTintColor = purpleColor
+        
+        statusSegmentedControl.setTitleTextAttributes(
+            [
+                .foregroundColor: mutedTextColor,
+                .font: UIFont.systemFont(ofSize: 13, weight: .semibold)
+            ],
+            for: .normal
+        )
+        
+        statusSegmentedControl.setTitleTextAttributes(
+            [
+                .foregroundColor: UIColor.white,
+                .font: UIFont.systemFont(ofSize: 13, weight: .bold)
+            ],
+            for: .selected
+        )
+        
+        statusSegmentedControl.addTarget(
+            self,
+            action: #selector(statusSegmentChanged),
+            for: .valueChanged
+        )
+        
+        let textStack = UIStackView(arrangedSubviews: [
+            sectionTitleLabel,
+            descriptionLabel
+        ])
+        textStack.axis = .vertical
+        textStack.spacing = 6
+        
+        let stack = UIStackView(arrangedSubviews: [
+            textStack,
+            statusSegmentedControl
+        ])
+        stack.axis = .vertical
+        stack.spacing = 14
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        
+        statusCardView.addSubview(stack)
+        contentStackView.addArrangedSubview(statusCardView)
+        
+        NSLayoutConstraint.activate([
+            statusSegmentedControl.heightAnchor.constraint(equalToConstant: 40),
+            
+            stack.topAnchor.constraint(equalTo: statusCardView.topAnchor, constant: 18),
+            stack.leadingAnchor.constraint(equalTo: statusCardView.leadingAnchor, constant: 18),
+            stack.trailingAnchor.constraint(equalTo: statusCardView.trailingAnchor, constant: -18),
+            stack.bottomAnchor.constraint(equalTo: statusCardView.bottomAnchor, constant: -18)
         ])
     }
     
@@ -392,6 +467,8 @@ final class BookDetailViewController: UIViewController {
         let trimmedISBN = book.isbn.trimmingCharacters(in: .whitespacesAndNewlines)
         isbnLabel.text = trimmedISBN.isEmpty ? "ISBN 정보 없음" : "ISBN \(trimmedISBN)"
         
+        statusSegmentedControl.selectedSegmentIndex = segmentIndex(for: book.status)
+        
         ratingView.setRating(book.displayRating)
         updateRatingValueLabel()
         
@@ -495,7 +572,66 @@ final class BookDetailViewController: UIViewController {
         periodSummaryLabel.text = "\(max(days + 1, 1))일"
     }
     
+    @objc private func statusSegmentChanged() {
+        guard let newStatus = statusForSelectedSegment() else {
+            return
+        }
+        
+        book.status = newStatus
+        
+        switch newStatus {
+        case .wish:
+            book.progress = nil
+            book.readingStartedAt = nil
+            book.readingFinishedAt = nil
+            
+        case .reading:
+            book.readingStartedAt = book.readingStartedAt ?? Date()
+            book.readingFinishedAt = nil
+            book.progress = book.progress ?? 0.0
+            startDatePicker.date = book.readingStartedAt ?? Date()
+            endDatePicker.date = maxDate(Date(), startDatePicker.date)
+            
+        case .done:
+            book.readingStartedAt = book.readingStartedAt ?? book.createdAt
+            book.readingFinishedAt = Date()
+            book.progress = 1.0
+            startDatePicker.date = book.readingStartedAt ?? book.createdAt
+            endDatePicker.date = maxDate(Date(), startDatePicker.date)
+        }
+        
+        updateReadingPeriodSummary()
+    }
+    
+    private func segmentIndex(for status: BookStatus) -> Int {
+        switch status {
+        case .wish:
+            return 0
+        case .reading:
+            return 1
+        case .done:
+            return 2
+        }
+    }
+    
+    private func statusForSelectedSegment() -> BookStatus? {
+        switch statusSegmentedControl.selectedSegmentIndex {
+        case 0:
+            return .wish
+        case 1:
+            return .reading
+        case 2:
+            return .done
+        default:
+            return nil
+        }
+    }
+    
     private func saveCurrentInputs() {
+        if let selectedStatus = statusForSelectedSegment() {
+            book.status = selectedStatus
+        }
+        
         book.shortReview = oneLineTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         book.memo = memoTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         book.quote = quoteTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -503,11 +639,21 @@ final class BookDetailViewController: UIViewController {
         book.ratingValue = ratingView.rating
         book.rating = Int(ratingView.rating.rounded())
         
-        book.readingStartedAt = startDatePicker.date
-        book.readingFinishedAt = endDatePicker.date
-        
-        if book.status == .done {
-            book.progress = 100.0
+        switch book.status {
+        case .wish:
+            book.progress = nil
+            book.readingStartedAt = nil
+            book.readingFinishedAt = nil
+            
+        case .reading:
+            book.readingStartedAt = startDatePicker.date
+            book.readingFinishedAt = nil
+            book.progress = book.progress ?? 0.0
+            
+        case .done:
+            book.readingStartedAt = startDatePicker.date
+            book.readingFinishedAt = endDatePicker.date
+            book.progress = 1.0
         }
         
         BookStore.shared.updateBook(book)
