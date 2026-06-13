@@ -409,8 +409,8 @@ final class SearchBookDetailViewController: UIViewController {
         BookStore.shared.addBook(book)
         
         let alert = UIAlertController(
-            title: "서재에 담았습니다",
-            message: "\(book.title)을 \(selectedStatus.rawValue)에 추가했습니다.",
+            title: "서재에 담았습니다.",
+            message: "\(book.title)을(를) \(selectedStatus.rawValue)에 추가했습니다.",
             preferredStyle: .alert
         )
         
