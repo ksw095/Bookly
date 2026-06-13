@@ -23,6 +23,17 @@
 
 ---
 
+
+## 🎬 시연 영상
+
+<p align="center">
+  <a href="https://youtube.com/shorts/yxczKXmsJo4">
+    <strong>▶ Bookly 시연 영상 바로가기</strong>
+  </a>
+</p>
+
+---
+
 ## 🎯 주요 기능
 
 - <strong>🔎 도서 검색</strong> : 카카오 도서 검색 API를 활용해 제목, 저자, 출판사 기준으로 도서를 쉽게 검색할 수 있습니다.
