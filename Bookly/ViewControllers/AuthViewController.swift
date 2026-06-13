@@ -44,6 +44,8 @@ final class AuthViewController: UIViewController {
     private let helperLabel = UILabel()
     
     private var confirmPasswordHeightConstraint: NSLayoutConstraint?
+    private var activeTextField: UITextField?
+    private var currentKeyboardFrame: CGRect?
     
     private let db = Firestore.firestore()
     
@@ -53,7 +55,12 @@ final class AuthViewController: UIViewController {
         
         configureUI()
         configureKeyboardDismiss()
+        configureKeyboardObservers()
         updateMode()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     private func configureUI() {
@@ -354,6 +361,70 @@ final class AuthViewController: UIViewController {
         view.addGestureRecognizer(tapGesture)
     }
     
+    private func configureKeyboardObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillShow),
+            name: UIResponder.keyboardWillShowNotification,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(keyboardWillHide),
+            name: UIResponder.keyboardWillHideNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard
+            let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
+            let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double
+        else {
+            return
+        }
+        
+        currentKeyboardFrame = keyboardFrame
+        adjustViewForKeyboard(duration: duration)
+    }
+    
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        currentKeyboardFrame = nil
+        
+        let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
+        
+        UIView.animate(withDuration: duration) {
+            self.view.transform = .identity
+        }
+    }
+    
+    private func adjustViewForKeyboard(duration: Double = 0.25) {
+        guard
+            let activeTextField,
+            let currentKeyboardFrame
+        else {
+            return
+        }
+        
+        let originalTransform = view.transform
+        view.transform = .identity
+        
+        let textFieldFrame = activeTextField.convert(activeTextField.bounds, to: view)
+        let keyboardFrameInView = view.convert(currentKeyboardFrame, from: nil)
+        let keyboardTopY = keyboardFrameInView.origin.y
+        
+        view.transform = originalTransform
+        
+        let bottomPadding: CGFloat = 24
+        let overlap = textFieldFrame.maxY + bottomPadding - keyboardTopY
+        let moveUp = max(overlap, 0)
+        
+        UIView.animate(withDuration: duration) {
+            self.view.transform = CGAffineTransform(translationX: 0, y: -moveUp)
+        }
+    }
+    
     @objc private func endEditing() {
         view.endEditing(true)
     }
@@ -606,6 +677,20 @@ final class AuthViewController: UIViewController {
 }
 
 extension AuthViewController: UITextFieldDelegate {
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        activeTextField = textField
+        
+        if currentKeyboardFrame != nil {
+            adjustViewForKeyboard()
+        }
+    }
+    
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        if activeTextField == textField {
+            activeTextField = nil
+        }
+    }
+    
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == emailTextField {
             passwordTextField.becomeFirstResponder()
